@@ -1,0 +1,881 @@
+import java.io.*;
+import java.util.*;
+
+public class LZWToolNoComments {
+
+    private static String mode;
+
+    private static int minW = 9;
+
+    private static int maxW = 16;
+
+    private static String policy = "freeze";
+
+    private static String alphabetPath;
+
+    private static class LRUTracker {
+
+        private class Node {
+            String key;
+            Node prev, next;
+            Node(String key) { this.key = key; }
+        }
+
+        private final HashMap<String, Node> map;  
+        private final Node head, tail;  
+
+        LRUTracker(int capacity) {
+            this.map = new HashMap<>(capacity);
+            this.head = new Node(null);
+            this.tail = new Node(null);
+            head.next = tail;
+            tail.prev = head;
+        }
+
+        void use(String key) {
+            Node node = map.get(key);
+            if (node != null) {
+                removeNode(node);
+                addToFront(node);
+            } else {
+                node = new Node(key);
+                map.put(key, node);
+                addToFront(node);
+            }
+        }
+
+        String findLRU() {
+            if (tail.prev == head) return null; 
+            String lruKey = tail.prev.key;
+            return lruKey;
+        }
+
+        void remove(String key) {
+            Node node = map.remove(key);
+            if (node != null) {
+                removeNode(node);
+            }
+        }
+
+        boolean contains(String key) {
+            return map.containsKey(key);
+        }
+
+        private void addToFront(Node node) {
+            node.next = head.next;
+            node.prev = head;
+            head.next.prev = node;
+            head.next = node;
+        }
+
+        private void removeNode(Node node) {
+            node.prev.next = node.next;
+            node.next.prev = node.prev;
+        }
+    }
+
+    private static class LRUTrackerDecoder {
+
+        private class Node {
+            int code;
+            Node prev, next;
+            Node(int code) { this.code = code; }
+        }
+
+        private final HashMap<Integer, Node> map;  
+        private final Node head, tail;  
+
+        LRUTrackerDecoder(int capacity) {
+            this.map = new HashMap<>(capacity);
+            this.head = new Node(-1);
+            this.tail = new Node(-1);
+            head.next = tail;
+            tail.prev = head;
+        }
+
+        void use(int code) {
+            Node node = map.get(code);
+            if (node != null) {
+                removeNode(node);
+                addToFront(node);
+            } else {
+                node = new Node(code);
+                map.put(code, node);
+                addToFront(node);
+            }
+        }
+
+        int findLRU() {
+            if (tail.prev == head) return -1;
+            int lruCode = tail.prev.code;
+            return lruCode;
+        }
+
+        void remove(int code) {
+            Node node = map.remove(code);
+            if (node != null) {
+                removeNode(node);
+            }
+        }
+
+        private void addToFront(Node node) {
+            node.next = head.next;
+            node.prev = head;
+            head.next.prev = node;
+            head.next = node;
+        }
+
+        private void removeNode(Node node) {
+            node.prev.next = node.next;
+            node.next.prev = node.prev;
+        }
+    }
+
+    private static class LFUTracker {
+
+        private class Node {
+            String key;
+            int freq;
+            Node prev, next;
+            Node(String key, int freq) { this.key = key; this.freq = freq; }
+        }
+
+        private class FreqList {
+            Node head, tail;
+
+            FreqList() {
+                head = new Node(null, 0);
+                tail = new Node(null, 0);
+                head.next = tail;
+                tail.prev = head;
+            }
+
+            void addToFront(Node node) {
+                node.next = head.next;
+                node.prev = head;
+                head.next.prev = node;
+                head.next = node;
+            }
+
+            void remove(Node node) {
+                node.prev.next = node.next;
+                node.next.prev = node.prev;
+            }
+
+            boolean isEmpty() {
+                return head.next == tail;
+            }
+
+            Node getFirst() {
+                return head.next == tail ? null : head.next;
+            }
+        }
+
+        private final HashMap<String, Node> keyToNode;       
+        private final HashMap<Integer, FreqList> freqToList; 
+        private int minFreq;                                  
+
+        LFUTracker(int capacity) {
+            this.keyToNode = new HashMap<>(capacity);
+            this.freqToList = new HashMap<>();
+            this.minFreq = 0;
+        }
+
+        void use(String key) {
+            Node node = keyToNode.get(key);
+            if (node == null) {
+                node = new Node(key, 1);
+                keyToNode.put(key, node);
+                freqToList.computeIfAbsent(1, k -> new FreqList()).addToFront(node);
+                minFreq = 1;
+            } else {
+                int oldFreq = node.freq;
+                FreqList oldList = freqToList.get(oldFreq);
+                oldList.remove(node);
+
+                if (oldFreq == minFreq && oldList.isEmpty()) {
+                    minFreq = oldFreq + 1;
+                }
+
+                node.freq++;
+                freqToList.computeIfAbsent(node.freq, k -> new FreqList()).addToFront(node);
+            }
+        }
+
+        String findLFU() {
+            FreqList minList = freqToList.get(minFreq);
+            if (minList == null || minList.isEmpty()) return null;
+            Node lfuNode = minList.getFirst();
+            return lfuNode.key;
+        }
+
+        void remove(String key) {
+            Node node = keyToNode.remove(key);
+            if (node != null) {
+                FreqList list = freqToList.get(node.freq);
+                list.remove(node);
+            }
+        }
+
+        boolean contains(String key) {
+            return keyToNode.containsKey(key);
+        }
+    }
+
+    private static class LFUTrackerDecoder {
+
+        private class Node {
+            int code;
+            int freq;
+            Node prev, next;
+            Node(int code, int freq) { this.code = code; this.freq = freq; }
+        }
+
+        private class FreqList {
+            Node head, tail;
+
+            FreqList() {
+                head = new Node(-1, 0);
+                tail = new Node(-1, 0);
+                head.next = tail;
+                tail.prev = head;
+            }
+
+            void addToFront(Node node) {
+                node.next = head.next;
+                node.prev = head;
+                head.next.prev = node;
+                head.next = node;
+            }
+
+            void remove(Node node) {
+                node.prev.next = node.next;
+                node.next.prev = node.prev;
+            }
+
+            boolean isEmpty() {
+                return head.next == tail;
+            }
+
+            Node getFirst() {
+                return head.next == tail ? null : head.next;
+            }
+        }
+
+        private final HashMap<Integer, Node> codeToNode;      
+        private final HashMap<Integer, FreqList> freqToList;  
+        private int minFreq;                                   
+
+        LFUTrackerDecoder(int capacity) {
+            this.codeToNode = new HashMap<>(capacity);
+            this.freqToList = new HashMap<>();
+            this.minFreq = 0;
+        }
+
+        void use(int code) {
+            Node node = codeToNode.get(code);
+            if (node == null) {
+                node = new Node(code, 1);
+                codeToNode.put(code, node);
+                freqToList.computeIfAbsent(1, k -> new FreqList()).addToFront(node);
+                minFreq = 1;
+            } else {
+                int oldFreq = node.freq;
+                FreqList oldList = freqToList.get(oldFreq);
+                oldList.remove(node);
+
+                if (oldFreq == minFreq && oldList.isEmpty()) {
+                    minFreq = oldFreq + 1;
+                }
+
+                node.freq++;
+                freqToList.computeIfAbsent(node.freq, k -> new FreqList()).addToFront(node);
+            }
+        }
+
+        int findLFU() {
+            FreqList minList = freqToList.get(minFreq);
+            if (minList == null || minList.isEmpty()) return -1;
+            Node lfuNode = minList.getFirst();
+            return lfuNode.code;
+        }
+
+        void remove(int code) {
+            Node node = codeToNode.remove(code);
+            if (node != null) {
+                FreqList list = freqToList.get(node.freq);
+                list.remove(node);
+            }
+        }
+    }
+
+    private static void validateCompressionArgs() {
+        if (alphabetPath == null) {
+            System.err.println("Missing required argument: --alphabet is required for compression mode");
+            System.exit(1);
+        }
+        if (minW < 1) {
+            System.err.println("Invalid argument: --minW must be at least 1 (cannot write 0-bit codewords)");
+            System.exit(1);
+        }
+        if (maxW < minW) {
+            System.err.println("Invalid argument: --maxW (" + maxW + ") must be >= --minW (" + minW + ")");
+            System.exit(1);
+        }
+        if (maxW > 32) {
+            System.err.println("Warning: --maxW (" + maxW + ") is very large, may cause issues");
+        }
+    }
+
+    private static void parseArguments(String[] args) {
+        for (int i = 0; i < args.length; i++) {
+            switch (args[i]) {
+                case "--mode":
+                    if (i + 1 >= args.length) {
+                        System.err.println("Missing value for argument: --mode requires a value (compress or expand)");
+                        System.exit(1);
+                    }
+                    mode = args[++i];
+                    break;
+                case "--minW":
+                    if (i + 1 >= args.length) {
+                        System.err.println("Missing value for argument: --minW requires a numeric value");
+                        System.exit(1);
+                    }
+                    try {
+                        minW = Integer.parseInt(args[++i]);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Invalid value for --minW: '" + args[i] + "' is not a valid integer");
+                        System.exit(1);
+                    }
+                    break;
+                case "--maxW":
+                    if (i + 1 >= args.length) {
+                        System.err.println("Missing value for argument: --maxW requires a numeric value");
+                        System.exit(1);
+                    }
+                    try {
+                        maxW = Integer.parseInt(args[++i]);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Invalid value for --maxW: '" + args[i] + "' is not a valid integer");
+                        System.exit(1);
+                    }
+                    break;
+                case "--policy":
+                    if (i + 1 >= args.length) {
+                        System.err.println("Missing value for argument: --policy requires a value (freeze, reset, lru, or lfu)");
+                        System.exit(1);
+                    }
+                    policy = args[++i];
+                    break;
+                case "--alphabet":
+                    if (i + 1 >= args.length) {
+                        System.err.println("Missing value for argument: --alphabet requires a file path");
+                        System.exit(1);
+                    }
+                    alphabetPath = args[++i];
+                    break;
+                default:
+                    System.err.println("Unknown argument: '" + args[i] + "' is not a recognized option");
+                    System.exit(2);
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+
+        if (args.length == 0) {
+            System.err.println("No arguments provided. Usage:");
+            System.err.println("  Compress: java LZWTool --mode compress --alphabet <file> [--minW <n>] [--maxW <n>] [--policy <name>]");
+            System.err.println("  Expand:   java LZWTool --mode expand");
+            System.exit(1);
+        }
+
+        parseArguments(args);
+
+        if (mode == null) {
+            System.err.println("Missing required argument: --mode must be specified (compress or expand)");
+            System.exit(1);
+        }
+
+        if (mode.equals("compress")) {
+            validateCompressionArgs();
+
+            List<Character> alphabet = loadAlphabet(alphabetPath);
+
+            if (alphabet == null) {
+                System.err.println("Failed to load alphabet: Could not read file '" + alphabetPath + "' (file may not exist or is not readable)");
+                System.exit(1);
+            }
+
+            if (alphabet.size() == 0) {
+                System.err.println("Invalid alphabet: Alphabet file '" + alphabetPath + "' contains no valid characters");
+                System.exit(1);
+            }
+
+            compress(minW, maxW, policy, alphabet);
+
+        } else if (mode.equals("expand")) {
+            expand();
+        } else {
+            System.err.println("Invalid value for --mode: '" + mode + "' is not valid (must be 'compress' or 'expand')");
+            System.exit(1);
+        }
+    }
+
+    private static List<Character> loadAlphabet(String path) {
+
+        List<Character> alphabet = new ArrayList<>(256);
+
+        boolean[] seen = new boolean[256];
+
+        alphabet.add('\r'); seen['\r'] = true;
+        alphabet.add('\n'); seen['\n'] = true;
+
+        try (InputStreamReader reader = new InputStreamReader(new FileInputStream(path), "UTF-8")) {
+
+            StringBuilder lineBuffer = new StringBuilder(16);
+            int c; 
+
+            while ((c = reader.read()) != -1) {
+                if (c == '\n') {
+
+                    if (lineBuffer.length() > 0) {
+
+                        char symbol = lineBuffer.charAt(0);
+
+                        if (!seen[symbol]) {
+                            seen[symbol] = true;
+                            alphabet.add(symbol);
+                        }
+                    }
+
+                    lineBuffer.setLength(0);
+                } else {
+
+                    lineBuffer.append((char) c);
+                }
+            }
+
+            if (lineBuffer.length() > 0) {
+                char symbol = lineBuffer.charAt(0);
+                if (!seen[symbol]) {
+                    seen[symbol] = true;
+                    alphabet.add(symbol);
+                }
+            }
+        } catch (IOException e) {
+            return null; 
+        }
+
+        return alphabet;
+    }
+
+    private static void compress(int minW, int maxW, String policy, List<Character> alphabet) {
+
+        writeHeader(minW, maxW, policy, alphabet);
+
+        TSTmod<Integer> dictionary = new TSTmod<>();
+
+        int W = minW;                    
+        int maxCode = 1 << maxW;         
+        int alphabetSize = alphabet.size();
+
+        boolean[] validChar = new boolean[256];
+        for (Character symbol : alphabet) {
+            validChar[symbol] = true;
+        }
+
+        int nextCode = 0;
+        StringBuilder sb = new StringBuilder(1);
+
+        for (Character symbol : alphabet) {
+            sb.setLength(0);
+            sb.append(symbol);
+            dictionary.put(sb, nextCode);
+            nextCode++;
+        }
+
+        int EOF_CODE = nextCode++;
+
+        boolean resetPolicy = policy.equals("reset");
+        boolean lruPolicy = policy.equals("lru");
+        boolean lfuPolicy = policy.equals("lfu");
+
+        int RESET_CODE = -1;
+        if (resetPolicy) {
+            RESET_CODE = nextCode++;
+        }
+
+        int initialNextCode = nextCode;
+
+        LRUTracker lruTracker = null;
+        if (lruPolicy) {
+            lruTracker = new LRUTracker(maxCode);
+        }
+
+        LFUTracker lfuTracker = null;
+        if (lfuPolicy) {
+            lfuTracker = new LFUTracker(maxCode);
+        }
+
+        StringBuilder[] alphabetKeys = null;
+        if (resetPolicy) {
+            alphabetKeys = new StringBuilder[alphabetSize];
+            for (int i = 0; i < alphabetSize; i++)
+                alphabetKeys[i] = new StringBuilder(String.valueOf(alphabet.get(i)));
+        }
+
+        if (BinaryStdIn.isEmpty()) {
+            BinaryStdOut.close();
+            return;
+        }
+
+        char c = BinaryStdIn.readChar();
+        if (!validChar[c]) {
+            System.err.println("Input contains byte value " + (int) c + " which is not in the alphabet");
+            System.exit(1);
+        }
+        StringBuilder current = new StringBuilder().append(c);
+
+        StringBuilder nextBuilder = new StringBuilder(256);
+
+        int widthThreshold = 1 << W;
+
+        while (!BinaryStdIn.isEmpty()) {
+
+            c = BinaryStdIn.readChar();
+
+            if (!validChar[c]) {
+                System.err.println("Input contains byte value " + (int) c + " which is not in the alphabet");
+                System.exit(1);
+            }
+
+            nextBuilder.setLength(0);
+            nextBuilder.append(current).append(c);
+
+            if (dictionary.contains(nextBuilder)) {
+
+                current.setLength(0);
+                current.append(nextBuilder);
+            } else {
+
+                int outputCode = dictionary.get(current);
+                BinaryStdOut.write(outputCode, W);
+
+                String currentStr = null;
+                if (lruPolicy || lfuPolicy) {
+                    currentStr = current.toString();
+                }
+
+                if (lruPolicy && lruTracker.contains(currentStr)) {
+                    lruTracker.use(currentStr);
+                }
+
+                if (lfuPolicy && lfuTracker.contains(currentStr)) {
+                    lfuTracker.use(currentStr);
+                }
+
+                if (nextCode < maxCode) {
+
+                    if (nextCode >= widthThreshold && W < maxW) {
+                        W++;
+                        widthThreshold = 1 << W;  
+                    }
+
+                    if (lruPolicy && nextCode == maxCode - 1) {
+                        String lruEntry = lruTracker.findLRU();
+                        if (lruEntry != null) {
+                            nextBuilder.setLength(0);
+                            nextBuilder.append(lruEntry);
+                            dictionary.put(nextBuilder, null);  
+                            lruTracker.remove(lruEntry);
+                        }
+                    }
+
+                    if (lfuPolicy && nextCode == maxCode - 1) {
+                        String lfuEntry = lfuTracker.findLFU();
+                        if (lfuEntry != null) {
+                            nextBuilder.setLength(0);
+                            nextBuilder.append(lfuEntry);
+                            dictionary.put(nextBuilder, null);  
+                            lfuTracker.remove(lfuEntry);
+                        }
+                    }
+
+                    nextBuilder.setLength(0);
+                    nextBuilder.append(current).append(c);
+                    String nextStr = nextBuilder.toString();
+
+                    dictionary.put(new StringBuilder(nextStr), nextCode);
+
+                    if (lruPolicy) {
+                        lruTracker.use(nextStr);
+                    }
+
+                    if (lfuPolicy) {
+                        lfuTracker.use(nextStr);
+                    }
+
+                    nextCode++;
+
+                } else {
+
+                    if (resetPolicy) {
+
+                        if (nextCode >= widthThreshold && W < maxW) {
+                            W++;
+                            widthThreshold = 1 << W;
+                        }
+
+                        BinaryStdOut.write(RESET_CODE, W);
+
+                        dictionary = new TSTmod<>();
+                        for (int i = 0; i < alphabetSize; i++)
+                            dictionary.put(alphabetKeys[i], i);
+
+                        nextCode = initialNextCode;
+                        W = minW;
+                        widthThreshold = 1 << W;  
+                    }
+                }
+
+                current.setLength(0);
+                current.append(c);
+            }
+        }
+
+        if (current.length() > 0) {
+            int outputCode = dictionary.get(current);
+            BinaryStdOut.write(outputCode, W);
+
+            String currentStr = null;
+            if (lruPolicy || lfuPolicy) {
+                currentStr = current.toString();
+            }
+
+            if (lruPolicy && lruTracker.contains(currentStr)) {
+                lruTracker.use(currentStr);
+            }
+
+            if (lfuPolicy && lfuTracker.contains(currentStr)) {
+                lfuTracker.use(currentStr);
+            }
+        }
+
+        if (nextCode >= widthThreshold && W < maxW) {
+            W++;
+            widthThreshold = 1 << W;
+        }
+
+        BinaryStdOut.write(EOF_CODE, W);
+
+        BinaryStdOut.close();
+    }
+
+    private static void expand() {
+
+        Header h = readHeader();
+
+        int maxCode = 1 << h.maxW;
+        int W = h.minW;
+        int alphabetSize = h.alphabetSize;
+
+        int EOF_CODE = h.alphabetSize;
+        int RESET_CODE = -1;
+        boolean resetPolicy = (h.policy == 1);
+        boolean lruPolicy = (h.policy == 2);
+        boolean lfuPolicy = (h.policy == 3);
+
+        int initialNextCode;
+        if (resetPolicy) {
+            RESET_CODE = h.alphabetSize + 1;
+            initialNextCode = h.alphabetSize + 2;
+        } else {
+            initialNextCode = h.alphabetSize + 1;
+        }
+
+        int nextCode = initialNextCode;
+
+        LRUTrackerDecoder lruTracker = null;
+        if (lruPolicy) {
+            lruTracker = new LRUTrackerDecoder(maxCode);
+        }
+
+        LFUTrackerDecoder lfuTracker = null;
+        if (lfuPolicy) {
+            lfuTracker = new LFUTrackerDecoder(maxCode);
+        }
+
+        String[] dictionary = new String[maxCode];
+        for (int i = 0; i < h.alphabetSize; i++) {
+            dictionary[i] = h.alphabet.get(i).toString();
+        }
+
+        if (BinaryStdIn.isEmpty()) {
+            BinaryStdOut.close();
+            return;
+        }
+
+        int prevCode = BinaryStdIn.readInt(W);
+
+        if (prevCode == EOF_CODE) {
+            BinaryStdOut.close();
+            return;
+        }
+
+        if (prevCode < h.alphabetSize) {
+            String val = dictionary[prevCode];
+            BinaryStdOut.write(val);
+        } else {
+            System.err.println("Bad compressed code: " + prevCode);
+            System.exit(1);
+        }
+
+        String valPrior = dictionary[prevCode];
+
+        int widthThreshold = 1 << W;
+
+        while (!BinaryStdIn.isEmpty()) {
+
+            if (nextCode >= widthThreshold && W < h.maxW) {
+                W++;
+                widthThreshold = 1 << W;
+            }
+
+            int codeword = BinaryStdIn.readInt(W);
+            if (codeword == EOF_CODE) {
+                break;
+            }
+
+            if (resetPolicy && codeword == RESET_CODE) {
+
+                for (int i = h.alphabetSize; i < dictionary.length; i++) {
+                    dictionary[i] = null;
+                }
+
+                nextCode = initialNextCode;
+                W = h.minW;
+                widthThreshold = 1 << W;
+
+                codeword = BinaryStdIn.readInt(W);
+
+                if (codeword == EOF_CODE) {
+                    break;
+                }
+
+                valPrior = dictionary[codeword];
+                BinaryStdOut.write(valPrior);
+
+                continue;
+            }
+
+            String s;
+            if (codeword < nextCode) {
+
+                s = dictionary[codeword];
+            } else if (codeword == nextCode) {
+
+                s = valPrior + valPrior.charAt(0);
+            } else {
+                System.err.println("Bad compressed code: " + codeword);
+                System.exit(1);
+                return;
+            }
+
+            BinaryStdOut.write(s);
+
+            if (nextCode < maxCode) {
+
+                if (lruPolicy && nextCode == maxCode - 1) {
+                    int lruCode = lruTracker.findLRU();
+                    if (lruCode != -1) {
+                        dictionary[lruCode] = null;
+                        lruTracker.remove(lruCode);
+                    }
+                }
+
+                if (lfuPolicy && nextCode == maxCode - 1) {
+                    int lfuCode = lfuTracker.findLFU();
+                    if (lfuCode != -1) {
+                        dictionary[lfuCode] = null;
+                        lfuTracker.remove(lfuCode);
+                    }
+                }
+
+                String newEntry = valPrior + s.charAt(0);
+                dictionary[nextCode] = newEntry;
+
+                if (lruPolicy) {
+                    lruTracker.use(nextCode);
+                }
+
+                if (lfuPolicy) {
+                    lfuTracker.use(nextCode);
+                }
+
+                nextCode++;
+            }
+
+            if (lruPolicy && codeword >= alphabetSize + 1) {
+                lruTracker.use(codeword);
+            }
+
+            if (lfuPolicy && codeword >= alphabetSize + 1) {
+                lfuTracker.use(codeword);
+            }
+
+            valPrior = s;
+        }
+
+        BinaryStdOut.close();
+    }
+
+    private static class Header {
+        int minW;                    
+        int maxW;                    
+        int policy;                  
+        List<Character> alphabet;    
+        int alphabetSize;            
+    }
+
+    private static void writeHeader(int minW, int maxW, String policy, List<Character> alphabet) {
+        BinaryStdOut.write(minW, 8);
+        BinaryStdOut.write(maxW, 8);
+
+        int policyCode;
+        switch (policy) {
+            case "freeze": policyCode = 0; break;
+            case "reset":  policyCode = 1; break;
+            case "lru":    policyCode = 2; break;
+            case "lfu":    policyCode = 3; break;
+            default:       policyCode = 0; break;  
+        }
+        BinaryStdOut.write(policyCode, 8);
+
+        int alphabetSize = alphabet.size();
+        BinaryStdOut.write(alphabetSize, 16);
+
+        for (Character symbol : alphabet) {
+            BinaryStdOut.write(symbol, 8);
+        }
+    }
+
+    private static Header readHeader() {
+        Header header = new Header();
+
+        header.minW = BinaryStdIn.readInt(8);
+        header.maxW = BinaryStdIn.readInt(8);
+        header.policy = BinaryStdIn.readInt(8);
+
+        int alphabetSize = BinaryStdIn.readInt(16);
+        header.alphabetSize = alphabetSize;
+
+        header.alphabet = new ArrayList<>(alphabetSize);
+        for (int i = 0; i < alphabetSize; i++) {
+            header.alphabet.add(BinaryStdIn.readChar(8));
+        }
+
+        return header;
+    }
+}
