@@ -1,7 +1,7 @@
 import java.io.*;
 import java.util.*;
 
-public class LZWToolNoComments {
+public class LZWTool {
 
     private static String mode;
 
