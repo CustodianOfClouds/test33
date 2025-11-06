@@ -21,11 +21,14 @@ class BitWriter:
         self.n_bits += num_bits
         while self.n_bits >= 8:
             self.n_bits -= 8
-            self.file.write(bytes([(self.buffer >> self.n_bits) & 0xFF]))
+            byte = (self.buffer >> self.n_bits) & 0xFF
+            self.file.write(bytes([byte]))
+        self.buffer &= (1 << self.n_bits) - 1  # Clear written bits, keep only remaining
 
     def close(self):
         if self.n_bits > 0:
-            self.file.write(bytes([(self.buffer << (8 - self.n_bits)) & 0xFF]))
+            byte = (self.buffer << (8 - self.n_bits)) & 0xFF
+            self.file.write(bytes([byte]))
         self.file.close()
 
 class BitReader:
@@ -42,7 +45,9 @@ class BitReader:
             self.buffer = (self.buffer << 8) | byte_data[0]
             self.n_bits += 8
         self.n_bits -= num_bits
-        return (self.buffer >> self.n_bits) & ((1 << num_bits) - 1)
+        value = (self.buffer >> self.n_bits) & ((1 << num_bits) - 1)
+        self.buffer &= (1 << self.n_bits) - 1  # Clear read bits
+        return value
 
     def close(self):
         self.file.close()
@@ -54,7 +59,6 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     writer = BitWriter(output_file)
     writer.write(min_bits, 8)
     writer.write(max_bits, 8)
-    writer.write(0, 8)  # freeze policy
     writer.write(len(alphabet), 16)
     for char in alphabet:
         writer.write(ord(char), 8)
@@ -62,40 +66,52 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     dictionary = {char: i for i, char in enumerate(alphabet)}
     next_code = len(alphabet) + 1  # +1 for EOF
 
-    with open(input_file, 'r') as f:
-        text = f.read()
-
-    for i, char in enumerate(text):
-        if char not in valid_chars:
-            raise ValueError(f"Character '{char}' at position {i} not in alphabet")
-
-    if not text:
-        writer.write(len(alphabet), min_bits)  # EOF
-        writer.close()
-        return
-
     code_bits = min_bits
     max_size = 1 << max_bits
     threshold = 1 << code_bits
-    current = text[0]
 
-    for char in text[1:]:
-        combined = current + char
-        if combined in dictionary:
-            current = combined
-        else:
-            writer.write(dictionary[current], code_bits)
-            if next_code < max_size:
-                if next_code >= threshold and code_bits < max_bits:
-                    code_bits += 1
-                    threshold = 1 << code_bits
-                dictionary[combined] = next_code
-                next_code += 1
-            current = char
+    with open(input_file, 'r') as f:
+        first_char = f.read(1)
+        if not first_char:
+            writer.write(len(alphabet), min_bits)  # EOF
+            writer.close()
+            return
+
+        if first_char not in valid_chars:
+            raise ValueError(f"Character '{first_char}' at position 0 not in alphabet")
+
+        current = first_char
+        pos = 1
+
+        while True:
+            char = f.read(1)
+            if not char:
+                break
+
+            if char not in valid_chars:
+                raise ValueError(f"Character '{char}' at position {pos} not in alphabet")
+            pos += 1
+
+            combined = current + char
+            if combined in dictionary:
+                current = combined
+            else:
+                writer.write(dictionary[current], code_bits)
+                if next_code < max_size:
+                    if next_code >= threshold and code_bits < max_bits:
+                        code_bits += 1
+                        threshold = 1 << code_bits
+                    dictionary[combined] = next_code
+                    next_code += 1
+                current = char
 
     writer.write(dictionary[current], code_bits)
+
+    # Check if we need to increment bit width before EOF
+    # (decoder will increment if next_code >= threshold)
     if next_code >= threshold and code_bits < max_bits:
         code_bits += 1
+
     writer.write(len(alphabet), code_bits)  # EOF
     writer.close()
     print(f"Compressed: {input_file} -> {output_file}")
@@ -105,7 +121,6 @@ def decompress(input_file, output_file):
 
     min_bits = reader.read(8)
     max_bits = reader.read(8)
-    reader.read(8)  # policy (unused)
     alphabet_size = reader.read(16)
     alphabet = [chr(reader.read(8)) for _ in range(alphabet_size)]
 
@@ -123,34 +138,34 @@ def decompress(input_file, output_file):
         open(output_file, 'w').close()
         return
 
-    output = [dictionary[codeword]]
     prev = dictionary[codeword]
 
-    while True:
-        if next_code >= threshold and code_bits < max_bits:
-            code_bits += 1
-            threshold = 1 << code_bits
+    with open(output_file, 'w') as out:
+        out.write(prev)
 
-        codeword = reader.read(code_bits)
-        if codeword is None or codeword == EOF:
-            break
+        while True:
+            if next_code >= threshold and code_bits < max_bits:
+                code_bits += 1
+                threshold = 1 << code_bits
 
-        if codeword in dictionary:
-            current = dictionary[codeword]
-        elif codeword == next_code:
-            current = prev + prev[0]
-        else:
-            raise ValueError(f"Invalid codeword: {codeword}")
+            codeword = reader.read(code_bits)
+            if codeword is None or codeword == EOF:
+                break
 
-        output.append(current)
-        if next_code < max_size:
-            dictionary[next_code] = prev + current[0]
-            next_code += 1
-        prev = current
+            if codeword in dictionary:
+                current = dictionary[codeword]
+            elif codeword == next_code:
+                current = prev + prev[0]
+            else:
+                raise ValueError(f"Invalid codeword: {codeword}")
+
+            out.write(current)
+            if next_code < max_size:
+                dictionary[next_code] = prev + current[0]
+                next_code += 1
+            prev = current
 
     reader.close()
-    with open(output_file, 'w') as f:
-        f.write(''.join(output))
     print(f"Decompressed: {input_file} -> {output_file}")
 
 def main():
