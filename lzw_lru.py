@@ -58,51 +58,63 @@ class LRUTracker(Generic[K]):
 
     Type-safe generic class: LRUTracker[str] for strings, LRUTracker[int] for ints.
     """
+    __slots__ = ('map', 'head', 'tail')  # Memory optimization
+
     class Node:
-        def __init__(self, key: Optional[K]):
+        __slots__ = ('key', 'prev', 'next')  # Memory optimization: ~40% less memory per node
+
+        def __init__(self, key: Optional[K]) -> None:
             self.key: Optional[K] = key
             self.prev: Optional['LRUTracker.Node'] = None
             self.next: Optional['LRUTracker.Node'] = None
 
     def __init__(self) -> None:
-        self.map: Dict[K, LRUTracker.Node] = {}
+        self.map: Dict[K, 'LRUTracker.Node'] = {}
         self.head: LRUTracker.Node = self.Node(None)
         self.tail: LRUTracker.Node = self.Node(None)
         self.head.next = self.tail
         self.tail.prev = self.head
 
     def use(self, key: K) -> None:
+        """Mark key as recently used. Adds key if not present."""
         node = self.map.get(key)
         if node is not None:
+            # Key exists - move to front (most recently used)
             self._remove_node(node)
             self._add_to_front(node)
         else:
+            # New key - add to front
             node = self.Node(key)
             self.map[key] = node
             self._add_to_front(node)
 
     def find_lru(self) -> Optional[K]:
+        """Return least recently used key, or None if empty."""
         if self.tail.prev == self.head:
             return None
         return self.tail.prev.key
 
     def remove(self, key: K) -> None:
+        """Remove key from tracking."""
         node = self.map.pop(key, None)
         if node is not None:
             self._remove_node(node)
 
     def contains(self, key: K) -> bool:
+        """Check if key is being tracked."""
         return key in self.map
 
     def _add_to_front(self, node: 'LRUTracker.Node') -> None:
+        """Add node after head (most recently used position)."""
         node.next = self.head.next
         node.prev = self.head
-        self.head.next.prev = node
+        self.head.next.prev = node  # type: ignore
         self.head.next = node
 
     def _remove_node(self, node: 'LRUTracker.Node') -> None:
-        node.prev.next = node.next
-        node.next.prev = node.prev
+        """Remove node from list (maintains links)."""
+        node.prev.next = node.next  # type: ignore
+        node.next.prev = node.prev  # type: ignore
 
 def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     alphabet = ALPHABETS[alphabet_name]
