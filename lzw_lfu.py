@@ -81,7 +81,7 @@ class LFUTracker:
                 return None
             return self.tail.prev
 
-    def __init__(self, capacity):
+    def __init__(self):
         self.key_to_node = {}
         self.freq_to_list = {}
         self.min_freq = 0
@@ -157,7 +157,7 @@ class LFUTrackerDecoder:
                 return None
             return self.tail.prev
 
-    def __init__(self, capacity):
+    def __init__(self):
         self.code_to_node = {}
         self.freq_to_list = {}
         self.min_freq = 0
@@ -217,7 +217,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     max_size = 1 << max_bits
     threshold = 1 << code_bits
 
-    lfu_tracker = LFUTracker(max_size)
+    lfu_tracker = LFUTracker()
 
     with open(input_file, 'r', encoding='latin-1') as f:
         first_char = f.read(1)
@@ -298,7 +298,7 @@ def decompress(input_file, output_file):
     max_size = 1 << max_bits
     threshold = 1 << code_bits
 
-    lfu_tracker = LFUTrackerDecoder(max_size)
+    lfu_tracker = LFUTrackerDecoder()
 
     codeword = reader.read(code_bits)
 

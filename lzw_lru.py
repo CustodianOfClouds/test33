@@ -55,7 +55,7 @@ class LRUTracker:
             self.prev = None
             self.next = None
 
-    def __init__(self, capacity):
+    def __init__(self):
         self.map = {}
         self.head = self.Node(None)
         self.tail = self.Node(None)
@@ -102,7 +102,7 @@ class LRUTrackerDecoder:
             self.prev = None
             self.next = None
 
-    def __init__(self, capacity):
+    def __init__(self):
         self.map = {}
         self.head = self.Node(-1)
         self.tail = self.Node(-1)
@@ -159,7 +159,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     max_size = 1 << max_bits
     threshold = 1 << code_bits
 
-    lru_tracker = LRUTracker(max_size)
+    lru_tracker = LRUTracker()
 
     with open(input_file, 'r', encoding='latin-1') as f:
         first_char = f.read(1)
@@ -240,7 +240,7 @@ def decompress(input_file, output_file):
     max_size = 1 << max_bits
     threshold = 1 << code_bits
 
-    lru_tracker = LRUTrackerDecoder(max_size)
+    lru_tracker = LRUTrackerDecoder()
 
     codeword = reader.read(code_bits)
 
