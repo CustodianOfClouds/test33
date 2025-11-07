@@ -76,10 +76,10 @@ class LFUTracker:
         def is_empty(self):
             return self.head.next == self.tail
 
-        def get_first(self):
-            if self.head.next == self.tail:
+        def get_last(self):
+            if self.tail.prev == self.head:
                 return None
-            return self.head.next
+            return self.tail.prev
 
     def __init__(self, capacity):
         self.key_to_node = {}
@@ -112,7 +112,7 @@ class LFUTracker:
         min_list = self.freq_to_list.get(self.min_freq)
         if min_list is None or min_list.is_empty():
             return None
-        lfu_node = min_list.get_first()
+        lfu_node = min_list.get_last()
         return lfu_node.key
 
     def remove(self, key):
@@ -152,10 +152,10 @@ class LFUTrackerDecoder:
         def is_empty(self):
             return self.head.next == self.tail
 
-        def get_first(self):
-            if self.head.next == self.tail:
+        def get_last(self):
+            if self.tail.prev == self.head:
                 return None
-            return self.head.next
+            return self.tail.prev
 
     def __init__(self, capacity):
         self.code_to_node = {}
@@ -188,7 +188,7 @@ class LFUTrackerDecoder:
         min_list = self.freq_to_list.get(self.min_freq)
         if min_list is None or min_list.is_empty():
             return -1
-        lfu_node = min_list.get_first()
+        lfu_node = min_list.get_last()
         return lfu_node.code
 
     def remove(self, code):
