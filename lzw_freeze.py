@@ -188,6 +188,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
     # Reserve code for EOF (End Of File marker)
     # If alphabet has 2 chars, EOF = 2, next available code = 3
+    EOF_CODE = len(alphabet)
     next_code = len(alphabet) + 1
 
     # Variable-width encoding parameters
@@ -203,7 +204,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
         # Empty file
         if not first_char:
-            writer.write(len(alphabet), min_bits)  # Just write EOF
+            writer.write(EOF_CODE, min_bits)  # Just write EOF
             writer.close()
             return
 
@@ -263,10 +264,10 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # This allows EOF to work with any min_bits/alphabet combination
     if next_code >= threshold and code_bits < max_bits:
         code_bits += 1
-        threshold <<= 1
+        # do not need to update "threshold <<= 1" because its the last check
 
     # Write EOF marker (uses alphabet_size as the EOF code)
-    writer.write(len(alphabet), code_bits)
+    writer.write(EOF_CODE, code_bits)
     writer.close()
     print(f"Compressed: {input_file} -> {output_file}")
 
@@ -306,6 +307,7 @@ def decompress(input_file, output_file):
     dictionary = {i: char for i, char in enumerate(alphabet)}
 
     # EOF is alphabet_size
+    EOF_CODE = alphabet_size
     next_code = alphabet_size + 1  # Next available dictionary code (alphabet_size reserved for EOF)
 
     # Variable-width decoding parameters (must match encoder)
@@ -321,7 +323,7 @@ def decompress(input_file, output_file):
         raise ValueError("Corrupted file: unexpected end of file (no EOF marker)")
 
     # Empty file (just EOF)
-    if codeword == alphabet_size:
+    if codeword == EOF_CODE:
         reader.close()
         open(output_file, 'w', encoding='latin-1').close()  # Create empty file
         return
@@ -351,7 +353,7 @@ def decompress(input_file, output_file):
                 raise ValueError("Corrupted file: unexpected end of file (no EOF marker)")
  
             # Check for EOF
-            if codeword == alphabet_size:
+            if codeword == EOF_CODE:
                 break
 
             # Decode codeword
