@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+from typing import TypeVar, Generic, Optional, Dict
 
 ALPHABETS = {
     'ascii': [chr(i) for i in range(128)],
@@ -48,21 +49,29 @@ class BitReader:
     def close(self):
         self.file.close()
 
-class LRUTracker:
-    class Node:
-        def __init__(self, key):
-            self.key = key
-            self.prev = None
-            self.next = None
+K = TypeVar('K')  # Key type (can be str, int, or any hashable type)
 
-    def __init__(self):
-        self.map = {}
-        self.head = self.Node(None)
-        self.tail = self.Node(None)
+class LRUTracker(Generic[K]):
+    """
+    O(1) LRU tracker using doubly-linked list + HashMap.
+    Works with any hashable key type (strings, integers, etc).
+
+    Type-safe generic class: LRUTracker[str] for strings, LRUTracker[int] for ints.
+    """
+    class Node:
+        def __init__(self, key: Optional[K]):
+            self.key: Optional[K] = key
+            self.prev: Optional['LRUTracker.Node'] = None
+            self.next: Optional['LRUTracker.Node'] = None
+
+    def __init__(self) -> None:
+        self.map: Dict[K, LRUTracker.Node] = {}
+        self.head: LRUTracker.Node = self.Node(None)
+        self.tail: LRUTracker.Node = self.Node(None)
         self.head.next = self.tail
         self.tail.prev = self.head
 
-    def use(self, key):
+    def use(self, key: K) -> None:
         node = self.map.get(key)
         if node is not None:
             self._remove_node(node)
@@ -72,70 +81,26 @@ class LRUTracker:
             self.map[key] = node
             self._add_to_front(node)
 
-    def find_lru(self):
+    def find_lru(self) -> Optional[K]:
         if self.tail.prev == self.head:
             return None
         return self.tail.prev.key
 
-    def remove(self, key):
+    def remove(self, key: K) -> None:
         node = self.map.pop(key, None)
         if node is not None:
             self._remove_node(node)
 
-    def contains(self, key):
+    def contains(self, key: K) -> bool:
         return key in self.map
 
-    def _add_to_front(self, node):
+    def _add_to_front(self, node: 'LRUTracker.Node') -> None:
         node.next = self.head.next
         node.prev = self.head
         self.head.next.prev = node
         self.head.next = node
 
-    def _remove_node(self, node):
-        node.prev.next = node.next
-        node.next.prev = node.prev
-
-class LRUTrackerDecoder:
-    class Node:
-        def __init__(self, code):
-            self.code = code
-            self.prev = None
-            self.next = None
-
-    def __init__(self):
-        self.map = {}
-        self.head = self.Node(-1)
-        self.tail = self.Node(-1)
-        self.head.next = self.tail
-        self.tail.prev = self.head
-
-    def use(self, code):
-        node = self.map.get(code)
-        if node is not None:
-            self._remove_node(node)
-            self._add_to_front(node)
-        else:
-            node = self.Node(code)
-            self.map[code] = node
-            self._add_to_front(node)
-
-    def find_lru(self):
-        if self.tail.prev == self.head:
-            return -1
-        return self.tail.prev.code
-
-    def remove(self, code):
-        node = self.map.pop(code, None)
-        if node is not None:
-            self._remove_node(node)
-
-    def _add_to_front(self, node):
-        node.next = self.head.next
-        node.prev = self.head
-        self.head.next.prev = node
-        self.head.next = node
-
-    def _remove_node(self, node):
+    def _remove_node(self, node: 'LRUTracker.Node') -> None:
         node.prev.next = node.next
         node.next.prev = node.prev
 
@@ -240,7 +205,7 @@ def decompress(input_file, output_file):
     max_size = 1 << max_bits
     threshold = 1 << code_bits
 
-    lru_tracker = LRUTrackerDecoder()
+    lru_tracker = LRUTracker()
 
     codeword = reader.read(code_bits)
 
@@ -282,7 +247,7 @@ def decompress(input_file, output_file):
             if next_code < max_size:
                 if next_code == max_size - 1:
                     lru_code = lru_tracker.find_lru()
-                    if lru_code != -1:
+                    if lru_code is not None:
                         dictionary[lru_code] = None
                         lru_tracker.remove(lru_code)
 

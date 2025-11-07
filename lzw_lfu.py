@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+from typing import TypeVar, Generic, Optional, Dict
 
 ALPHABETS = {
     'ascii': [chr(i) for i in range(128)],
@@ -48,18 +49,28 @@ class BitReader:
     def close(self):
         self.file.close()
 
-class LFUTracker:
+K = TypeVar('K')  # Key type (can be str, int, or any hashable type)
+
+class LFUTracker(Generic[K]):
+    """
+    O(1) LFU tracker using frequency buckets + doubly-linked lists.
+    Works with any hashable key type (strings, integers, etc).
+    Uses LRU tie-breaking for entries with the same frequency.
+
+    Type-safe generic class: LFUTracker[str] for strings, LFUTracker[int] for ints.
+    """
     class Node:
-        def __init__(self, key, freq):
-            self.key = key
-            self.freq = freq
-            self.prev = None
-            self.next = None
+        def __init__(self, key: Optional[K], freq: int):
+            self.key: Optional[K] = key
+            self.freq: int = freq
+            self.prev: Optional['LFUTracker.Node'] = None
+            self.next: Optional['LFUTracker.Node'] = None
 
     class FreqList:
-        def __init__(self):
-            self.head = LFUTracker.Node(None, 0)
-            self.tail = LFUTracker.Node(None, 0)
+        def __init__(self, outer_class):
+            self.outer_class = outer_class
+            self.head = outer_class.Node(None, 0)
+            self.tail = outer_class.Node(None, 0)
             self.head.next = self.tail
             self.tail.prev = self.head
 
@@ -81,18 +92,18 @@ class LFUTracker:
                 return None
             return self.tail.prev
 
-    def __init__(self):
-        self.key_to_node = {}
-        self.freq_to_list = {}
-        self.min_freq = 0
+    def __init__(self) -> None:
+        self.key_to_node: Dict[K, LFUTracker.Node] = {}
+        self.freq_to_list: Dict[int, LFUTracker.FreqList] = {}
+        self.min_freq: int = 0
 
-    def use(self, key):
+    def use(self, key: K) -> None:
         node = self.key_to_node.get(key)
         if node is None:
             node = self.Node(key, 1)
             self.key_to_node[key] = node
             if 1 not in self.freq_to_list:
-                self.freq_to_list[1] = self.FreqList()
+                self.freq_to_list[1] = self.FreqList(self.__class__)
             self.freq_to_list[1].add_to_front(node)
             self.min_freq = 1
         else:
@@ -105,97 +116,24 @@ class LFUTracker:
 
             node.freq += 1
             if node.freq not in self.freq_to_list:
-                self.freq_to_list[node.freq] = self.FreqList()
+                self.freq_to_list[node.freq] = self.FreqList(self.__class__)
             self.freq_to_list[node.freq].add_to_front(node)
 
-    def find_lfu(self):
+    def find_lfu(self) -> Optional[K]:
         min_list = self.freq_to_list.get(self.min_freq)
         if min_list is None or min_list.is_empty():
             return None
         lfu_node = min_list.get_last()
         return lfu_node.key
 
-    def remove(self, key):
+    def remove(self, key: K) -> None:
         node = self.key_to_node.pop(key, None)
         if node is not None:
             freq_list = self.freq_to_list[node.freq]
             freq_list.remove(node)
 
-    def contains(self, key):
+    def contains(self, key: K) -> bool:
         return key in self.key_to_node
-
-class LFUTrackerDecoder:
-    class Node:
-        def __init__(self, code, freq):
-            self.code = code
-            self.freq = freq
-            self.prev = None
-            self.next = None
-
-    class FreqList:
-        def __init__(self):
-            self.head = LFUTrackerDecoder.Node(-1, 0)
-            self.tail = LFUTrackerDecoder.Node(-1, 0)
-            self.head.next = self.tail
-            self.tail.prev = self.head
-
-        def add_to_front(self, node):
-            node.next = self.head.next
-            node.prev = self.head
-            self.head.next.prev = node
-            self.head.next = node
-
-        def remove(self, node):
-            node.prev.next = node.next
-            node.next.prev = node.prev
-
-        def is_empty(self):
-            return self.head.next == self.tail
-
-        def get_last(self):
-            if self.tail.prev == self.head:
-                return None
-            return self.tail.prev
-
-    def __init__(self):
-        self.code_to_node = {}
-        self.freq_to_list = {}
-        self.min_freq = 0
-
-    def use(self, code):
-        node = self.code_to_node.get(code)
-        if node is None:
-            node = self.Node(code, 1)
-            self.code_to_node[code] = node
-            if 1 not in self.freq_to_list:
-                self.freq_to_list[1] = self.FreqList()
-            self.freq_to_list[1].add_to_front(node)
-            self.min_freq = 1
-        else:
-            old_freq = node.freq
-            old_list = self.freq_to_list[old_freq]
-            old_list.remove(node)
-
-            if old_freq == self.min_freq and old_list.is_empty():
-                self.min_freq = old_freq + 1
-
-            node.freq += 1
-            if node.freq not in self.freq_to_list:
-                self.freq_to_list[node.freq] = self.FreqList()
-            self.freq_to_list[node.freq].add_to_front(node)
-
-    def find_lfu(self):
-        min_list = self.freq_to_list.get(self.min_freq)
-        if min_list is None or min_list.is_empty():
-            return -1
-        lfu_node = min_list.get_last()
-        return lfu_node.code
-
-    def remove(self, code):
-        node = self.code_to_node.pop(code, None)
-        if node is not None:
-            freq_list = self.freq_to_list[node.freq]
-            freq_list.remove(node)
 
 def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     alphabet = ALPHABETS[alphabet_name]
@@ -298,7 +236,7 @@ def decompress(input_file, output_file):
     max_size = 1 << max_bits
     threshold = 1 << code_bits
 
-    lfu_tracker = LFUTrackerDecoder()
+    lfu_tracker = LFUTracker()
 
     codeword = reader.read(code_bits)
 
@@ -340,7 +278,7 @@ def decompress(input_file, output_file):
             if next_code < max_size:
                 if next_code == max_size - 1:
                     lfu_code = lfu_tracker.find_lfu()
-                    if lfu_code != -1:
+                    if lfu_code is not None:
                         dictionary[lfu_code] = None
                         lfu_tracker.remove(lfu_code)
 
