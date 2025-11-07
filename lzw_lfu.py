@@ -59,35 +59,45 @@ class LFUTracker(Generic[K]):
 
     Type-safe generic class: LFUTracker[str] for strings, LFUTracker[int] for ints.
     """
+    __slots__ = ('key_to_node', 'freq_to_list', 'min_freq')  # Memory optimization
+
     class Node:
-        def __init__(self, key: Optional[K], freq: int):
+        __slots__ = ('key', 'freq', 'prev', 'next')  # Memory optimization: ~40% less memory per node
+
+        def __init__(self, key: Optional[K], freq: int) -> None:
             self.key: Optional[K] = key
             self.freq: int = freq
             self.prev: Optional['LFUTracker.Node'] = None
             self.next: Optional['LFUTracker.Node'] = None
 
     class FreqList:
-        def __init__(self, outer_class):
+        __slots__ = ('outer_class', 'head', 'tail')  # Memory optimization
+
+        def __init__(self, outer_class) -> None:
             self.outer_class = outer_class
             self.head = outer_class.Node(None, 0)
             self.tail = outer_class.Node(None, 0)
             self.head.next = self.tail
             self.tail.prev = self.head
 
-        def add_to_front(self, node):
+        def add_to_front(self, node: 'LFUTracker.Node') -> None:
+            """Add node after head (most recently used position in this frequency bucket)."""
             node.next = self.head.next
             node.prev = self.head
-            self.head.next.prev = node
+            self.head.next.prev = node  # type: ignore
             self.head.next = node
 
-        def remove(self, node):
-            node.prev.next = node.next
-            node.next.prev = node.prev
+        def remove(self, node: 'LFUTracker.Node') -> None:
+            """Remove node from list (maintains links)."""
+            node.prev.next = node.next  # type: ignore
+            node.next.prev = node.prev  # type: ignore
 
-        def is_empty(self):
+        def is_empty(self) -> bool:
+            """Check if frequency bucket is empty."""
             return self.head.next == self.tail
 
-        def get_last(self):
+        def get_last(self) -> Optional['LFUTracker.Node']:
+            """Get least recently used node in this frequency bucket (for LRU tie-breaking)."""
             if self.tail.prev == self.head:
                 return None
             return self.tail.prev
@@ -98,8 +108,10 @@ class LFUTracker(Generic[K]):
         self.min_freq: int = 0
 
     def use(self, key: K) -> None:
+        """Mark key as used. Adds key if not present, increments frequency if present."""
         node = self.key_to_node.get(key)
         if node is None:
+            # New key - add to frequency 1 bucket
             node = self.Node(key, 1)
             self.key_to_node[key] = node
             if 1 not in self.freq_to_list:
@@ -107,10 +119,12 @@ class LFUTracker(Generic[K]):
             self.freq_to_list[1].add_to_front(node)
             self.min_freq = 1
         else:
+            # Existing key - increment frequency and move to next bucket
             old_freq = node.freq
             old_list = self.freq_to_list[old_freq]
             old_list.remove(node)
 
+            # If we just emptied the min_freq bucket, increment min_freq
             if old_freq == self.min_freq and old_list.is_empty():
                 self.min_freq = old_freq + 1
 
@@ -120,19 +134,22 @@ class LFUTracker(Generic[K]):
             self.freq_to_list[node.freq].add_to_front(node)
 
     def find_lfu(self) -> Optional[K]:
+        """Return least frequently used key (LRU tie-breaking), or None if empty."""
         min_list = self.freq_to_list.get(self.min_freq)
         if min_list is None or min_list.is_empty():
             return None
         lfu_node = min_list.get_last()
-        return lfu_node.key
+        return lfu_node.key  # type: ignore
 
     def remove(self, key: K) -> None:
+        """Remove key from tracking."""
         node = self.key_to_node.pop(key, None)
         if node is not None:
             freq_list = self.freq_to_list[node.freq]
             freq_list.remove(node)
 
     def contains(self, key: K) -> bool:
+        """Check if key is being tracked."""
         return key in self.key_to_node
 
 def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
