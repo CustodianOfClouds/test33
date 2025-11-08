@@ -502,7 +502,7 @@ def decompress(input_file, output_file):
                 if next_code == max_size - 1:
                     lru_code = lru_tracker.find_lru()
                     if lru_code is not None:
-                        dictionary[lru_code] = None  # Invalidate entry (don't delete - code still used)
+                        del dictionary[lru_code]  # Remove entry (code becomes "dead")
                         lru_tracker.remove(lru_code)  # Remove from LRU tracker
 
                 # New entry is: previous string + first char of current string

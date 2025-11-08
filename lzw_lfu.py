@@ -544,7 +544,7 @@ def decompress(input_file, output_file):
                 if next_code == max_size - 1:
                     lfu_code = lfu_tracker.find_lfu()
                     if lfu_code is not None:
-                        dictionary[lfu_code] = None  # Invalidate entry (don't delete - code still used)
+                        del dictionary[lfu_code]  # Remove entry (code becomes "dead")
                         lfu_tracker.remove(lfu_code)  # Remove from LFU tracker
 
                 # New entry is: previous string + first char of current string
