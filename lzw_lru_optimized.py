@@ -245,8 +245,18 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                     debug_print(f"[ENC] Code {output_code} was evicted, now being used")
                     debug_print(f"[ENC] Sending EVICT_SIGNAL to sync decoder")
 
+                    # EVICT_SIGNAL packet format:
+                    # [EVICT_SIGNAL][code][entry_length][char1]...[charN]
+                    #
+                    # NOTE: We send 'output_code' twice - once in the packet below
+                    # and again as normal output after this block. This allows the decoder
+                    # to handle EVICT_SIGNAL cleanly in a separate block, then fall
+                    # through to normal processing. We could save ~10% more space by
+                    # having the decoder reuse the code from the packet, but this would
+                    # complicate the decoder logic. Current approach prioritizes code
+                    # clarity and maintainability over maximum compression.
                     writer.write(EVICT_SIGNAL, code_bits)
-                    writer.write(output_code, code_bits)
+                    writer.write(output_code, code_bits)  # Code sent here (metadata)
                     writer.write(len(current), 16)
                     for c in current:
                         writer.write(ord(c), 8)
@@ -258,7 +268,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                     del evicted_codes[output_code]
 
                 # Output code for current phrase
-                writer.write(output_code, code_bits)
+                writer.write(output_code, code_bits)  # Code sent again (data)
                 output_count += 1
                 debug_print(f"[ENC #{output_count}] OUTPUT code={output_code} for '{current}' ({code_bits} bits)")
 
