@@ -238,7 +238,8 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
     LRU Eviction Details:
     - Track dictionary entries (not alphabet) with LRUTracker
-    - When next_code reaches max_size-1, evict LRU before adding new entry
+    - When dictionary is full, evict LRU and reuse its code position
+    - Send EVICT_SIGNAL to decoder to maintain synchronization
     - Update access time whenever an entry is used during compression
     - Single-char entries (alphabet) are never tracked or evicted
 
@@ -252,7 +253,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     Edge cases handled:
     - Empty file: Just write EOF marker
     - Characters not in alphabet: Raise error immediately
-    - Dictionary full: Evict LRU entry, then add new entry
+    - Dictionary full: Evict LRU entry, reuse its code, send signal to decoder
     - Bit width increments: Check before EOF to match decoder expectations
     """
     alphabet = ALPHABETS[alphabet_name]
@@ -270,14 +271,17 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # Example: {'a': 0, 'b': 1} for alphabet ['a', 'b']
     dictionary = {char: i for i, char in enumerate(alphabet)}
 
-    # Reserve code for EOF (End Of File marker)
-    # If alphabet has 2 chars, EOF = 2, next available code = 3
+    # Reserve codes:
+    # - len(alphabet): EOF marker
+    # - len(alphabet)+1 to max_size-2: dictionary entries
+    # - max_size-1: EVICT_SIGNAL
     EOF_CODE = len(alphabet)
-    next_code = len(alphabet) + 1
+    max_size = 1 << max_bits            # Maximum dictionary size (2^max_bits)
+    EVICT_SIGNAL = max_size - 1         # Special signal for eviction
+    next_code = len(alphabet) + 1       # Next available code
 
     # Variable-width encoding parameters
     code_bits = min_bits                # Current bit width (starts at min_bits)
-    max_size = 1 << max_bits            # Maximum dictionary size (2^max_bits)
     threshold = 1 << code_bits          # When to increment bit width (2^code_bits)
 
     # LRU tracker for dictionary entries (NOT alphabet entries)
@@ -324,6 +328,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
             if combined in dictionary:
                 # Phrase exists in dictionary - keep extending
+                # Don't update LRU yet - only update when we actually output the code
                 current = combined
             else:
                 # Phrase not in dictionary - output code and add new entry
@@ -335,25 +340,43 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                 if lru_tracker.contains(current):
                     lru_tracker.use(current)
 
-                # Add new entry to dictionary if not full
-                if next_code < max_size:
+                # Add new entry to dictionary
+                if next_code < EVICT_SIGNAL:
+                    # Dictionary not full yet - add normally
+
                     # Check if we need to increase bit width
                     # When next_code reaches threshold (512, 1024, etc.), we need more bits
                     if next_code >= threshold and code_bits < max_bits:
                         code_bits += 1
                         threshold <<= 1  # Double threshold (bitshift left = multiply by 2)
 
-                    # LRU EVICTION: If dictionary is about to be full, evict LRU entry first
-                    if next_code == max_size - 1:
-                        lru_entry = lru_tracker.find_lru()
-                        if lru_entry is not None:
-                            del dictionary[lru_entry]  # Remove from dictionary
-                            lru_tracker.remove(lru_entry)  # Remove from LRU tracker
-
                     # Add new phrase to dictionary and track it
                     dictionary[combined] = next_code
                     lru_tracker.use(combined)  # Mark as most recently used
                     next_code += 1
+                else:
+                    # Dictionary is FULL - evict LRU and reuse its code
+                    lru_entry = lru_tracker.find_lru()
+                    if lru_entry is not None:
+                        # Get the code of the LRU entry
+                        lru_code = dictionary[lru_entry]
+
+                        # Send eviction signal to decoder
+                        # Format: [EVICT_SIGNAL] [code] [entry_length] [char1...charN]
+                        writer.write(EVICT_SIGNAL, code_bits)
+                        writer.write(lru_code, code_bits)
+                        writer.write(len(combined), 16)
+                        for c in combined:
+                            writer.write(ord(c), 8)
+
+                        # Remove old entry from dictionary and LRU tracker
+                        del dictionary[lru_entry]
+                        lru_tracker.remove(lru_entry)
+
+                        # Add new entry at the evicted code position
+                        dictionary[combined] = lru_code
+                        lru_tracker.use(combined)
+                        # Note: next_code stays at EVICT_SIGNAL (doesn't increment)
 
                 # Start new phrase with current character
                 current = char
@@ -390,25 +413,24 @@ def decompress(input_file, output_file):
     1. Read header to get compression parameters and alphabet
     2. Initialize dictionary with single-character entries
     3. Read codes from compressed file
-    4. Decode each code using dictionary
+    4. Decode each code using dictionary (or handle EVICT_SIGNAL)
     5. Add new entries to dictionary as we decode (mirroring encoder)
     6. When dictionary fills, evict LRU entry before adding new one
     7. Write decompressed output incrementally (streaming for memory efficiency)
 
     LRU Eviction Details:
     - Track dictionary codes (not alphabet codes) with LRUTracker
-    - When next_code reaches max_size-1, evict LRU before adding new entry
+    - When dictionary is full, handle EVICT_SIGNAL from encoder
     - Update access time whenever a code is read from compressed file
     - Single-char codes (alphabet) are never tracked or evicted
-    - Invalidated entries (set to None) are handled by codeword == next_code case
 
     Edge cases handled:
     - Empty file: Just EOF marker, create empty output
     - Special LZW case: Code not yet in dictionary (codeword == next_code)
       This happens when pattern like "aba" is encoded as "ab" + "a"
     - Bit width increments: Match encoder's increments exactly
-    - Dictionary full: Evict LRU entry, then add new entry
-    - Evicted entry re-referenced: Handled by special case logic
+    - Dictionary full: Receive EVICT_SIGNAL, evict specified code, add new entry
+    - EVICT_SIGNAL: Special code indicating eviction happening on encoder side
     """
     reader = BitReader(input_file)
 
@@ -422,13 +444,17 @@ def decompress(input_file, output_file):
     # Example: {0: 'a', 1: 'b'} for alphabet ['a', 'b']
     dictionary = {i: char for i, char in enumerate(alphabet)}
 
-    # EOF is alphabet_size
+    # Reserve codes (must match encoder):
+    # - alphabet_size: EOF marker
+    # - alphabet_size+1 to max_size-2: dictionary entries
+    # - max_size-1: EVICT_SIGNAL
     EOF_CODE = alphabet_size
-    next_code = alphabet_size + 1  # Next available dictionary code (alphabet_size reserved for EOF)
+    max_size = 1 << max_bits
+    EVICT_SIGNAL = max_size - 1
+    next_code = alphabet_size + 1  # Next available dictionary code
 
     # Variable-width decoding parameters (must match encoder)
     code_bits = min_bits
-    max_size = 1 << max_bits
     threshold = 1 << code_bits
 
     # LRU tracker for dictionary codes (NOT alphabet codes)
@@ -477,9 +503,32 @@ def decompress(input_file, output_file):
             if codeword == EOF_CODE:
                 break
 
+            # Check for EVICT_SIGNAL
+            if codeword == EVICT_SIGNAL:
+                # Encoder is evicting an entry and adding a new one
+                # Format: [EVICT_SIGNAL] [code] [entry_length] [char1...charN]
+
+                # Read which code is being evicted
+                evict_code = reader.read(code_bits)
+
+                # Read the new entry
+                entry_length = reader.read(16)
+                new_entry = ''.join(chr(reader.read(8)) for _ in range(entry_length))
+
+                # Remove old entry from LRU tracker (if tracked)
+                if evict_code in dictionary and evict_code >= alphabet_size + 1:
+                    lru_tracker.remove(evict_code)
+
+                # Add new entry at the evicted code position
+                dictionary[evict_code] = new_entry
+                lru_tracker.use(evict_code)
+
+                # Don't output anything, don't update prev, continue to next code
+                continue
+
             # Decode codeword
             if codeword in dictionary:
-                # Normal case: code exists in dictionary (or was invalidated to None)
+                # Normal case: code exists in dictionary
                 current = dictionary[codeword]
             elif codeword == next_code:
                 # SPECIAL LZW EDGE CASE:
@@ -496,24 +545,20 @@ def decompress(input_file, output_file):
             # Write decoded string as bytes
             out.write(current.encode('latin-1'))
 
-            # Add new entry to dictionary if not full
-            if next_code < max_size:
-                # LRU EVICTION: If dictionary is about to be full, evict LRU entry first
-                if next_code == max_size - 1:
-                    lru_code = lru_tracker.find_lru()
-                    if lru_code is not None:
-                        dictionary[lru_code] = None  # Invalidate entry (don't delete - code still used)
-                        lru_tracker.remove(lru_code)  # Remove from LRU tracker
-
+            # Add new entry to dictionary
+            if next_code < EVICT_SIGNAL:
+                # Dictionary not full yet - add normally
                 # New entry is: previous string + first char of current string
                 # This mirrors what encoder did
                 dictionary[next_code] = prev + current[0]
                 lru_tracker.use(next_code)  # Mark as most recently used
                 next_code += 1
+            # Note: When next_code >= EVICT_SIGNAL, encoder will send EVICT_SIGNAL
+            # instead of normal codes, so we don't need an else block here
 
             # Update LRU for codeword if it's a tracked entry (not alphabet)
             # Only track codes >= alphabet_size + 1 (skip EOF code too)
-            if codeword >= alphabet_size + 1:
+            if codeword >= alphabet_size + 1 and codeword < EVICT_SIGNAL:
                 lru_tracker.use(codeword)
 
             # Update previous string for next iteration
