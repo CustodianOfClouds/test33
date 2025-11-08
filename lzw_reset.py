@@ -70,27 +70,31 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     max_size = 1 << max_bits
     threshold = 1 << code_bits
 
-    with open(input_file, 'r', encoding='latin-1') as f:
-        first_char = f.read(1)
+    with open(input_file, 'rb') as f:
+        first_byte = f.read(1)
 
-        if not first_char:
+        if not first_byte:
             writer.write(EOF_CODE, min_bits)
             writer.close()
             return
 
+        first_char = chr(first_byte[0])
+
         if first_char not in valid_chars:
-            raise ValueError(f"Character '{first_char}' at position 0 not in alphabet")
+            raise ValueError(f"Byte value {first_byte[0]} at position 0 not in alphabet")
 
         current = first_char
         pos = 1
 
         while True:
-            char = f.read(1)
-            if not char:
+            byte_data = f.read(1)
+            if not byte_data:
                 break
 
+            char = chr(byte_data[0])
+
             if char not in valid_chars:
-                raise ValueError(f"Character '{char}' at position {pos} not in alphabet")
+                raise ValueError(f"Byte value {byte_data[0]} at position {pos} not in alphabet")
             pos += 1
 
             combined = current + char
@@ -155,13 +159,13 @@ def decompress(input_file, output_file):
 
     if codeword == EOF_CODE:
         reader.close()
-        open(output_file, 'w', encoding='latin-1').close()
+        open(output_file, 'wb').close()
         return
 
     prev = dictionary[codeword]
 
-    with open(output_file, 'w', encoding='latin-1') as out:
-        out.write(prev)
+    with open(output_file, 'wb') as out:
+        out.write(prev.encode('latin-1'))
 
         while True:
             if next_code >= threshold and code_bits < max_bits:
@@ -191,7 +195,7 @@ def decompress(input_file, output_file):
                     break
 
                 prev = dictionary[codeword]
-                out.write(prev)
+                out.write(prev.encode('latin-1'))
                 continue
 
             if codeword in dictionary:
@@ -201,7 +205,7 @@ def decompress(input_file, output_file):
             else:
                 raise ValueError(f"Invalid codeword: {codeword}")
 
-            out.write(current)
+            out.write(current.encode('latin-1'))
 
             if next_code < max_size:
                 dictionary[next_code] = prev + current[0]

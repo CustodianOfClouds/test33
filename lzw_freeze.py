@@ -196,34 +196,40 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     max_size = 1 << max_bits            # Maximum dictionary size (2^max_bits)
     threshold = 1 << code_bits          # When to increment bit width (2^code_bits)
 
-    # Read and compress file character by character (streaming for memory efficiency)
-    # Use latin-1 encoding to support all 256 characters (0-255)
-    with open(input_file, 'r', encoding='latin-1') as f:
-        # Read first character
-        first_char = f.read(1)
+    # Read and compress file byte by byte (streaming for memory efficiency)
+    # Binary mode to handle all file types correctly (text and binary)
+    with open(input_file, 'rb') as f:
+        # Read first byte
+        first_byte = f.read(1)
 
         # Empty file
-        if not first_char:
+        if not first_byte:
             writer.write(EOF_CODE, min_bits)  # Just write EOF
             writer.close()
             return
 
+        # Convert byte to character for dictionary matching
+        first_char = chr(first_byte[0])
+
         # Validate first character is in alphabet
         if first_char not in valid_chars:
-            raise ValueError(f"Character '{first_char}' at position 0 not in alphabet")
+            raise ValueError(f"Byte value {first_byte[0]} at position 0 not in alphabet")
 
         current = first_char  # Current phrase being matched
         pos = 1  # Track position for better error messages
 
         # Main LZW compression loop
         while True:
-            char = f.read(1)  # Read next character
-            if not char:      # End of input
+            byte_data = f.read(1)  # Read next byte
+            if not byte_data:          # End of input
                 break
+
+            # Convert byte to character
+            char = chr(byte_data[0])
 
             # Validate character
             if char not in valid_chars:
-                raise ValueError(f"Character '{char}' at position {pos} not in alphabet")
+                raise ValueError(f"Byte value {byte_data[0]} at position {pos} not in alphabet")
             pos += 1
 
             combined = current + char  # Try extending current phrase
@@ -325,7 +331,7 @@ def decompress(input_file, output_file):
     # Empty file (just EOF)
     if codeword == EOF_CODE:
         reader.close()
-        open(output_file, 'w', encoding='latin-1').close()  # Create empty file
+        open(output_file, 'wb').close()  # Create empty file
         return
 
     # Decode first codeword and write to output
@@ -333,9 +339,10 @@ def decompress(input_file, output_file):
     prev = dictionary[codeword]  # Previous decoded string
 
     # Write output incrementally (streaming - handles huge files)
-    # Use latin-1 encoding to support all 256 characters (0-255)
-    with open(output_file, 'w', encoding='latin-1') as out:
-        out.write(prev)
+    # Binary mode to handle all file types correctly (text and binary)
+    with open(output_file, 'wb') as out:
+        # Convert string to bytes using latin-1 encoding
+        out.write(prev.encode('latin-1'))
 
         # Main LZW decompression loop
         while True:
@@ -351,7 +358,7 @@ def decompress(input_file, output_file):
             # Check for file corruption
             if codeword is None:
                 raise ValueError("Corrupted file: unexpected end of file (no EOF marker)")
- 
+
             # Check for EOF
             if codeword == EOF_CODE:
                 break
@@ -372,8 +379,8 @@ def decompress(input_file, output_file):
                 # Invalid codeword - corrupted file
                 raise ValueError(f"Invalid codeword: {codeword}")
 
-            # Write decoded string
-            out.write(current)
+            # Write decoded string as bytes
+            out.write(current.encode('latin-1'))
 
             # Add new entry to dictionary if not full (FREEZE policy)
             if next_code < max_size:
