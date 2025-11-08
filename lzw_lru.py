@@ -617,6 +617,13 @@ def decompress(input_file, output_file, log=False):
             # Write decoded string as bytes
             out.write(current.encode('latin-1'))
 
+            # Update LRU for codeword BEFORE adding new entry (must match encoder order!)
+            # Only track codes >= alphabet_size + 2 (skip EOF and EVICT_SIGNAL codes)
+            if codeword >= alphabet_size + 2:
+                lru_tracker.use(codeword)
+                if log:
+                    print(f"[LRU] Updated code {codeword} as recently used")
+
             # Add new entry to dictionary
             if next_code < max_size:
                 # Dictionary not full: add normally
@@ -642,13 +649,6 @@ def decompress(input_file, output_file, log=False):
                     lru_tracker.use(lru_code)  # Mark as most recently used
                     if log:
                         print(f"[DICT] Added {lru_code} -> '{new_entry}' (reused code, dict_size={len(dictionary)})")
-
-            # Update LRU for codeword if it's a tracked entry (not alphabet)
-            # Only track codes >= alphabet_size + 2 (skip EOF and EVICT_SIGNAL codes)
-            if codeword >= alphabet_size + 2:
-                lru_tracker.use(codeword)
-                if log:
-                    print(f"[LRU] Updated code {codeword} as recently used")
 
             # Update previous string for next iteration
             prev = current
