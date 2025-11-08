@@ -188,9 +188,9 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # LRU tracker for dictionary entries (NOT alphabet entries)
     lru_tracker = LRUTracker()
 
-    # Track recently evicted code to detect immediate reuse
-    recently_evicted_code = None
-    recently_evicted_entry = None
+    # Track ALL evicted codes and their new values (since dict became full)
+    # Key: code that was evicted, Value: new value at that code
+    evicted_codes = {}
 
     debug_print("\n" + "="*80)
     debug_print("OPTIMIZED ENCODER START")
@@ -237,9 +237,9 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                 # About to output code for current phrase
                 output_code = dictionary[current]
 
-                # OPTIMIZATION: Check if this code was just evicted
-                if output_code == recently_evicted_code:
-                    # Encoder is about to use a code that was just evicted!
+                # OPTIMIZATION: Check if this code was evicted and now has a new value
+                if output_code in evicted_codes:
+                    # Encoder is about to use a code that was evicted!
                     # Decoder won't know the new value - SEND SIGNAL
                     debug_print(f"[ENC] *** EVICT-THEN-USE DETECTED! ***")
                     debug_print(f"[ENC] Code {output_code} was evicted, now being used")
@@ -254,6 +254,9 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                     signal_count += 1
                     debug_print(f"[ENC] Signal sent for code={output_code} -> '{current}'")
 
+                    # Remove from evicted_codes since we've now synced it
+                    del evicted_codes[output_code]
+
                 # Output code for current phrase
                 writer.write(output_code, code_bits)
                 output_count += 1
@@ -262,10 +265,6 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                 # Update LRU if current phrase is tracked
                 if lru_tracker.contains(current):
                     lru_tracker.use(current)
-
-                # Reset recently_evicted after outputting
-                recently_evicted_code = None
-                recently_evicted_entry = None
 
                 # Add new entry to dictionary
                 if next_code < EVICT_SIGNAL:
@@ -298,19 +297,18 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                         dictionary[combined] = lru_code
                         lru_tracker.use(combined)
 
-                        # Track this eviction
-                        recently_evicted_code = lru_code
-                        recently_evicted_entry = combined
+                        # Track this eviction in case code is used later
+                        evicted_codes[lru_code] = combined
 
-                        debug_print(f"[ENC] Tracking evicted code={lru_code} for potential immediate use")
+                        debug_print(f"[ENC] Tracking evicted code={lru_code} -> '{combined}' for potential use")
 
                 current = char
 
     # Write final phrase
     final_code = dictionary[current]
 
-    # Check if final code was recently evicted
-    if final_code == recently_evicted_code:
+    # Check if final code was evicted
+    if final_code in evicted_codes:
         debug_print(f"[ENC] *** EVICT-THEN-USE on final phrase! ***")
         writer.write(EVICT_SIGNAL, code_bits)
         writer.write(final_code, code_bits)
@@ -318,6 +316,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
         for c in current:
             writer.write(ord(c), 8)
         signal_count += 1
+        del evicted_codes[final_code]
 
     writer.write(final_code, code_bits)
     output_count += 1
@@ -409,22 +408,10 @@ def decompress(input_file, output_file):
     input_count += 1
     debug_print(f"[DEC #{input_count}] READ code={codeword} -> '{prev}'")
 
-    # Track if we need to add an entry to dictionary (deferred when dict is full)
-    pending_addition = None  # Will be (prev, current[0]) when we need to add
-
     with open(output_file, 'wb') as out:
         out.write(prev.encode('latin-1'))
 
         while True:
-            # If there's a pending addition from previous iteration, handle it now
-            # We deferred it to check if next code is EVICT_SIGNAL
-            if pending_addition is not None and next_code >= EVICT_SIGNAL:
-                # Dictionary is full, need to evict
-                # But first, peek at next code to see if it's EVICT_SIGNAL
-                # Actually, we've already read the next code by this point
-                # So we need to restructure...
-                pass
-
             # Check if we need to increase bit width
             if next_code >= threshold and code_bits < max_bits:
                 code_bits += 1
@@ -441,7 +428,7 @@ def decompress(input_file, output_file):
                 debug_print(f"[DEC] READ EOF")
                 break
 
-            # Check for EVICT_SIGNAL FIRST, before doing any local eviction
+            # Check for EVICT_SIGNAL
             if codeword == EVICT_SIGNAL:
                 # Encoder evicted and is using the code immediately
                 debug_print(f"[DEC] *** EVICT_SIGNAL received ***")
@@ -461,44 +448,10 @@ def decompress(input_file, output_file):
                 dictionary[evict_code] = new_entry
                 lru_tracker.use(evict_code)
 
-                debug_print(f"[DEC] Dictionary updated from signal (this replaces local eviction)")
-
-                # Signal handled the eviction/addition, so don't do it locally
-                pending_addition = None
+                debug_print(f"[DEC] Dictionary updated from signal")
 
                 # Don't output anything, don't update prev, continue to next code
                 continue
-
-            # Now handle any pending addition from previous iteration
-            if pending_addition is not None:
-                prev_str, first_char = pending_addition
-                new_entry = prev_str + first_char
-
-                if next_code < EVICT_SIGNAL:
-                    # Dictionary not full yet
-                    dictionary[next_code] = new_entry
-                    lru_tracker.use(next_code)
-                    debug_print(f"[DEC] ADDED code={next_code} -> '{new_entry}'")
-                    next_code += 1
-                else:
-                    # Dictionary FULL - mirror encoder's LRU eviction
-                    lru_code = lru_tracker.find_lru()
-                    if lru_code is not None:
-                        lru_entry = dictionary[lru_code]
-
-                        eviction_count += 1
-                        debug_print(f"[DEC] EVICTING code={lru_code} -> '{lru_entry}' (LRU)")
-                        debug_print(f"[DEC] ADDING code={lru_code} -> '{new_entry}' (mirroring encoder)")
-
-                        # Remove old entry
-                        del dictionary[lru_code]
-                        lru_tracker.remove(lru_code)
-
-                        # Add new entry at evicted position
-                        dictionary[lru_code] = new_entry
-                        lru_tracker.use(lru_code)
-
-                pending_addition = None
 
             input_count += 1
 
@@ -517,14 +470,37 @@ def decompress(input_file, output_file):
             # Write decoded string
             out.write(current.encode('latin-1'))
 
+            # Add new entry to dictionary (this is where eviction might happen)
+            new_entry = prev + current[0]
+
+            if next_code < EVICT_SIGNAL:
+                # Dictionary not full yet - add normally
+                dictionary[next_code] = new_entry
+                lru_tracker.use(next_code)
+                debug_print(f"[DEC] ADDED code={next_code} -> '{new_entry}'")
+                next_code += 1
+            else:
+                # Dictionary FULL - mirror encoder's LRU eviction
+                lru_code = lru_tracker.find_lru()
+                if lru_code is not None:
+                    lru_entry = dictionary[lru_code]
+
+                    eviction_count += 1
+                    debug_print(f"[DEC] EVICTING code={lru_code} -> '{lru_entry}' (LRU)")
+                    debug_print(f"[DEC] ADDING code={lru_code} -> '{new_entry}' (mirroring encoder)")
+
+                    # Remove old entry
+                    del dictionary[lru_code]
+                    lru_tracker.remove(lru_code)
+
+                    # Add new entry at evicted position
+                    dictionary[lru_code] = new_entry
+                    lru_tracker.use(lru_code)
+
             # Update LRU for codeword if tracked
             if codeword >= alphabet_size + 1 and codeword < EVICT_SIGNAL:
                 if codeword in dictionary:
                     lru_tracker.use(codeword)
-
-            # Defer adding to dictionary until next iteration
-            # (so we can check if next code is EVICT_SIGNAL first)
-            pending_addition = (prev, current[0])
 
             prev = current
 
