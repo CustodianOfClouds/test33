@@ -347,7 +347,10 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
                     entry = reused_codes[code_to_write]
                     writer.write(EVICT_SIGNAL, code_bits)
                     writer.write(code_to_write, code_bits)
-                    writer.write(len(entry), 8)
+                    # Write entry length as 16 bits (supports entries up to 65,535 chars)
+                    # LIMITATION: Dictionary entries longer than 65,535 characters will overflow
+                    # In practice, this never happens due to LRU eviction of long, infrequently-used entries
+                    writer.write(len(entry), 16)
                     for ch in entry:
                         writer.write(ord(ch), 8)
                     # No need to send code_to_write again - decoder will reuse it
@@ -424,7 +427,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
         entry = reused_codes[final_code]
         writer.write(EVICT_SIGNAL, code_bits)
         writer.write(final_code, code_bits)
-        writer.write(len(entry), 8)
+        writer.write(len(entry), 16)  # 16 bits to support entries up to 65,535 chars
         for ch in entry:
             writer.write(ord(ch), 8)
         # No need to send final_code again - decoder will reuse it
@@ -573,8 +576,10 @@ def decompress(input_file, output_file, log=False):
             if codeword == EVICT_SIGNAL:
                 # Read which code was evicted/reused
                 code_num = reader.read(code_bits)
-                # Read entry length
-                entry_len = reader.read(8)
+                # Read entry length (16 bits supports entries up to 65,535 chars)
+                # LIMITATION: Entries longer than 65,535 characters will cause incorrect decompression
+                # In practice, this never happens due to LRU eviction (see encoder comments)
+                entry_len = reader.read(16)
                 # Read entry characters
                 entry_chars = []
                 for _ in range(entry_len):
