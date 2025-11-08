@@ -1,0 +1,4 @@
+Hello, World!
+This is a test of LZW compression with LRU eviction.
+The quick brown fox jumps over the lazy dog.
+Pack my box with five dozen liquor jugs.
