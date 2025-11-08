@@ -225,7 +225,7 @@ class LRUTracker(Generic[K]):
 # LZW COMPRESSION WITH LRU EVICTION
 # ============================================================================
 
-def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
+def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, log=False):
     """
     Compress a file using LZW with LRU eviction policy.
 
@@ -284,6 +284,13 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # Tracks only multi-character sequences added during compression
     lru_tracker = LRUTracker()
 
+    if log:
+        print(f"\n=== COMPRESSION START ===")
+        print(f"Alphabet: {alphabet}")
+        print(f"Alphabet size: {len(alphabet)}, EOF_CODE: {EOF_CODE}")
+        print(f"Initial next_code: {next_code}, code_bits: {code_bits}, max_size: {max_size}")
+        print(f"Initial dictionary: {dictionary}\n")
+
     # Read and compress file byte by byte (streaming for memory efficiency)
     # Binary mode to handle all file types correctly (text and binary)
     with open(input_file, 'rb') as f:
@@ -329,37 +336,61 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                 # Phrase not in dictionary - output code and add new entry
 
                 # Output code for current phrase
-                writer.write(dictionary[current], code_bits)
+                code_to_write = dictionary[current]
+                writer.write(code_to_write, code_bits)
+
+                if log:
+                    print(f"[ENCODE] Output code {code_to_write} for phrase '{current}' (bits={code_bits})")
 
                 # Update LRU if current phrase is a tracked entry (not single char from alphabet)
                 if lru_tracker.contains(current):
                     lru_tracker.use(current)
+                    if log:
+                        print(f"[LRU] Updated '{current}' as recently used")
 
-                # Add new entry to dictionary if not full
+                # Add new entry to dictionary
                 if next_code < max_size:
+                    # Dictionary not full: add normally
                     # Check if we need to increase bit width
                     # When next_code reaches threshold (512, 1024, etc.), we need more bits
                     if next_code >= threshold and code_bits < max_bits:
+                        old_bits = code_bits
                         code_bits += 1
                         threshold <<= 1  # Double threshold (bitshift left = multiply by 2)
-
-                    # LRU EVICTION: If dictionary is about to be full, evict LRU entry first
-                    if next_code == max_size - 1:
-                        lru_entry = lru_tracker.find_lru()
-                        if lru_entry is not None:
-                            del dictionary[lru_entry]  # Remove from dictionary
-                            lru_tracker.remove(lru_entry)  # Remove from LRU tracker
+                        if log:
+                            print(f"[BITS] Increased from {old_bits} to {code_bits} bits (next_code={next_code}, threshold={threshold})")
 
                     # Add new phrase to dictionary and track it
                     dictionary[combined] = next_code
                     lru_tracker.use(combined)  # Mark as most recently used
+                    if log:
+                        print(f"[DICT] Added '{combined}' -> {next_code} (dict_size={len(dictionary)})")
                     next_code += 1
+                else:
+                    # Dictionary is full: evict LRU and reuse its code
+                    lru_entry = lru_tracker.find_lru()
+                    if lru_entry is not None:
+                        evicted_code = dictionary[lru_entry]  # Get the code before deleting
+                        del dictionary[lru_entry]  # Remove from dictionary
+                        lru_tracker.remove(lru_entry)  # Remove from LRU tracker
+
+                        if log:
+                            print(f"[EVICT] Evicted '{lru_entry}' (code {evicted_code}), dict_size={len(dictionary)}")
+
+                        # Add new phrase using the evicted code
+                        dictionary[combined] = evicted_code
+                        lru_tracker.use(combined)  # Mark as most recently used
+                        if log:
+                            print(f"[DICT] Added '{combined}' -> {evicted_code} (reused code, dict_size={len(dictionary)})")
 
                 # Start new phrase with current character
                 current = char
 
     # Write final phrase
-    writer.write(dictionary[current], code_bits)
+    final_code = dictionary[current]
+    writer.write(final_code, code_bits)
+    if log:
+        print(f"[ENCODE] Output FINAL code {final_code} for phrase '{current}' (bits={code_bits})")
 
     # Update LRU for final phrase if it's tracked
     if lru_tracker.contains(current):
@@ -371,10 +402,16 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # Therefore we must write EOF with the SAME (potentially incremented) bit width
     # This allows EOF to work with any min_bits/alphabet combination
     if next_code >= threshold and code_bits < max_bits:
+        old_bits = code_bits
         code_bits += 1
+        if log:
+            print(f"[BITS] Increased from {old_bits} to {code_bits} bits before EOF")
 
     # Write EOF marker (uses alphabet_size as the EOF code)
     writer.write(EOF_CODE, code_bits)
+    if log:
+        print(f"[ENCODE] Output EOF code {EOF_CODE} (bits={code_bits})")
+        print(f"\n=== COMPRESSION END ===\n")
     writer.close()
     print(f"Compressed: {input_file} -> {output_file}")
 
@@ -382,7 +419,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 # LZW DECOMPRESSION WITH LRU EVICTION
 # ============================================================================
 
-def decompress(input_file, output_file):
+def decompress(input_file, output_file, log=False):
     """
     Decompress a file compressed with LZW LRU mode.
 
@@ -435,6 +472,13 @@ def decompress(input_file, output_file):
     # Tracks only multi-character sequences added during decompression
     lru_tracker = LRUTracker()
 
+    if log:
+        print(f"\n=== DECOMPRESSION START ===")
+        print(f"Alphabet: {alphabet}")
+        print(f"Alphabet size: {alphabet_size}, EOF_CODE: {EOF_CODE}")
+        print(f"Initial next_code: {next_code}, code_bits: {code_bits}, max_size: {max_size}")
+        print(f"Initial dictionary: {dictionary}\n")
+
     # Read first codeword
     codeword = reader.read(code_bits)
 
@@ -452,6 +496,9 @@ def decompress(input_file, output_file):
     # First codeword is always part of dictionary
     prev = dictionary[codeword]  # Previous decoded string
 
+    if log:
+        print(f"[DECODE] Read code {codeword} -> '{prev}' (bits={code_bits})")
+
     # Write output incrementally (streaming - handles huge files)
     # Binary mode to handle all file types correctly (text and binary)
     with open(output_file, 'wb') as out:
@@ -463,8 +510,11 @@ def decompress(input_file, output_file):
             # This happens AFTER processing previous codeword, BEFORE reading next one
             # Encoder checks this same condition before writing EOF, so bit widths match
             if next_code >= threshold and code_bits < max_bits:
+                old_bits = code_bits
                 code_bits += 1
                 threshold <<= 1
+                if log:
+                    print(f"[BITS] Increased from {old_bits} to {code_bits} bits (next_code={next_code}, threshold={threshold})")
 
             # Read next codeword
             codeword = reader.read(code_bits)
@@ -475,12 +525,16 @@ def decompress(input_file, output_file):
 
             # Check for EOF
             if codeword == EOF_CODE:
+                if log:
+                    print(f"[DECODE] Read EOF code {EOF_CODE}")
                 break
 
             # Decode codeword
             if codeword in dictionary:
                 # Normal case: code exists in dictionary (or was invalidated to None)
                 current = dictionary[codeword]
+                if log:
+                    print(f"[DECODE] Read code {codeword} -> '{current}' (bits={code_bits})")
             elif codeword == next_code:
                 # SPECIAL LZW EDGE CASE:
                 # Encoder output code for entry it's about to add!
@@ -489,6 +543,8 @@ def decompress(input_file, output_file):
                 # Then sees "aba" and outputs next_code before decoder added it!
                 # Solution: current = prev + first char of prev
                 current = prev + prev[0]
+                if log:
+                    print(f"[DECODE] Read code {codeword} (SPECIAL CASE: next_code) -> '{current}' (bits={code_bits})")
             else:
                 # Invalid codeword - corrupted file
                 raise ValueError(f"Invalid codeword: {codeword}")
@@ -496,30 +552,45 @@ def decompress(input_file, output_file):
             # Write decoded string as bytes
             out.write(current.encode('latin-1'))
 
-            # Add new entry to dictionary if not full
+            # Add new entry to dictionary
             if next_code < max_size:
-                # LRU EVICTION: If dictionary is about to be full, evict LRU entry first
-                if next_code == max_size - 1:
-                    lru_code = lru_tracker.find_lru()
-                    if lru_code is not None:
-                        dictionary[lru_code] = None  # Invalidate entry (don't delete - code still used)
-                        lru_tracker.remove(lru_code)  # Remove from LRU tracker
-
+                # Dictionary not full: add normally
                 # New entry is: previous string + first char of current string
                 # This mirrors what encoder did
-                dictionary[next_code] = prev + current[0]
+                new_entry = prev + current[0]
+                dictionary[next_code] = new_entry
                 lru_tracker.use(next_code)  # Mark as most recently used
+                if log:
+                    print(f"[DICT] Added {next_code} -> '{new_entry}' (dict_size={len(dictionary)})")
                 next_code += 1
+            else:
+                # Dictionary is full: evict LRU and reuse its code
+                lru_code = lru_tracker.find_lru()
+                if lru_code is not None:
+                    evicted_entry = dictionary.get(lru_code)
+                    lru_tracker.remove(lru_code)  # Remove from LRU tracker
+                    if log:
+                        print(f"[EVICT] Evicted code {lru_code} ('{evicted_entry}'), dict_size={len(dictionary)}")
+                    # Overwrite the evicted code with new entry
+                    new_entry = prev + current[0]
+                    dictionary[lru_code] = new_entry
+                    lru_tracker.use(lru_code)  # Mark as most recently used
+                    if log:
+                        print(f"[DICT] Added {lru_code} -> '{new_entry}' (reused code, dict_size={len(dictionary)})")
 
             # Update LRU for codeword if it's a tracked entry (not alphabet)
             # Only track codes >= alphabet_size + 1 (skip EOF code too)
             if codeword >= alphabet_size + 1:
                 lru_tracker.use(codeword)
+                if log:
+                    print(f"[LRU] Updated code {codeword} as recently used")
 
             # Update previous string for next iteration
             prev = current
 
     reader.close()
+    if log:
+        print(f"\n=== DECOMPRESSION END ===\n")
     print(f"Decompressed: {input_file} -> {output_file}")
 
 # ============================================================================
@@ -538,19 +609,21 @@ def main():
     c.add_argument('--alphabet', required=True, choices=list(ALPHABETS.keys()))
     c.add_argument('--min-bits', type=int, default=9)
     c.add_argument('--max-bits', type=int, default=16)
+    c.add_argument('--log', action='store_true', help='Enable detailed logging')
 
     # Decompress subcommand
     d = sub.add_parser('decompress')
     d.add_argument('input')
     d.add_argument('output')
+    d.add_argument('--log', action='store_true', help='Enable detailed logging')
 
     args = parser.parse_args()
 
     try:
         if args.mode == 'compress':
-            compress(args.input, args.output, args.alphabet, args.min_bits, args.max_bits)
+            compress(args.input, args.output, args.alphabet, args.min_bits, args.max_bits, args.log)
         else:
-            decompress(args.input, args.output)
+            decompress(args.input, args.output, args.log)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
