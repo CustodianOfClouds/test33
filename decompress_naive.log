@@ -1,0 +1,38 @@
+
+=== DECOMPRESSION START ===
+Alphabet: ['a', 'b']
+Alphabet size: 2, EOF_CODE: 2
+Initial next_code: 3, code_bits: 9, max_size: 8
+Initial dictionary: {0: 'a', 1: 'b'}
+
+[DECODE] Read code 0 -> 'a' (bits=9)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[DICT] Added 3 -> 'ab' (dict_size=3)
+[DECODE] Read code 3 -> 'ab' (bits=9)
+[DICT] Added 4 -> 'ba' (dict_size=4)
+[LRU] Updated code 3 as recently used
+[DECODE] Read code 5 (SPECIAL CASE: next_code) -> 'aba' (bits=9)
+[DICT] Added 5 -> 'aba' (dict_size=5)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 4 -> 'ba' (bits=9)
+[DICT] Added 6 -> 'abab' (dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 7 (SPECIAL CASE: next_code) -> 'bab' (bits=9)
+[DICT] Added 7 -> 'bab' (dict_size=7)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 3 ('ab'), dict_size=7
+[DICT] Added 3 -> 'baba' (reused code, dict_size=7)
+[DECODE] Read code 3 -> 'baba' (bits=9)
+[EVICT] Evicted code 5 ('aba'), dict_size=7
+[DICT] Added 5 -> 'ab' (reused code, dict_size=7)
+[LRU] Updated code 3 as recently used
+[DECODE] Read code 7 -> 'bab' (bits=9)
+[EVICT] Evicted code 6 ('abab'), dict_size=7
+[DICT] Added 6 -> 'babab' (reused code, dict_size=7)
+[LRU] Updated code 7 as recently used
+[DECODE] Read EOF code 2
+
+=== DECOMPRESSION END ===
+
+Decompressed: test_ab10_naive.lzw -> test_ab10_naive_out.txt

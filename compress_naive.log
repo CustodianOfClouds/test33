@@ -1,0 +1,37 @@
+
+=== COMPRESSION START ===
+Alphabet: ['a', 'b']
+Alphabet size: 2, EOF_CODE: 2
+Initial next_code: 3, code_bits: 9, max_size: 8
+Initial dictionary: {'a': 0, 'b': 1}
+
+[ENCODE] Output code 0 for phrase 'a' (bits=9)
+[DICT] Added 'ab' -> 3 (dict_size=3)
+[ENCODE] Output code 1 for phrase 'b' (bits=9)
+[DICT] Added 'ba' -> 4 (dict_size=4)
+[ENCODE] Output code 3 for phrase 'ab' (bits=9)
+[LRU] Updated 'ab' as recently used
+[DICT] Added 'aba' -> 5 (dict_size=5)
+[ENCODE] Output code 5 for phrase 'aba' (bits=9)
+[LRU] Updated 'aba' as recently used
+[DICT] Added 'abab' -> 6 (dict_size=6)
+[ENCODE] Output code 4 for phrase 'ba' (bits=9)
+[LRU] Updated 'ba' as recently used
+[DICT] Added 'bab' -> 7 (dict_size=7)
+[ENCODE] Output code 7 for phrase 'bab' (bits=9)
+[LRU] Updated 'bab' as recently used
+[EVICT] Evicted 'ab' (code 3), dict_size=6
+[DICT] Added 'baba' -> 3 (reused code, dict_size=7)
+[ENCODE] Output code 0 for phrase 'a' (bits=9)
+[EVICT] Evicted 'aba' (code 5), dict_size=6
+[DICT] Added 'ab' -> 5 (reused code, dict_size=7)
+[ENCODE] Output code 3 for phrase 'baba' (bits=9)
+[LRU] Updated 'baba' as recently used
+[EVICT] Evicted 'abab' (code 6), dict_size=6
+[DICT] Added 'babab' -> 6 (reused code, dict_size=7)
+[ENCODE] Output FINAL code 7 for phrase 'bab' (bits=9)
+[ENCODE] Output EOF code 2 (bits=9)
+
+=== COMPRESSION END ===
+
+Compressed: test_ab10_small.txt -> test_ab10_naive.lzw

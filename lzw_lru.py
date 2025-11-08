@@ -270,10 +270,15 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
     # Example: {'a': 0, 'b': 1} for alphabet ['a', 'b']
     dictionary = {char: i for i, char in enumerate(alphabet)}
 
-    # Reserve code for EOF (End Of File marker)
-    # If alphabet has 2 chars, EOF = 2, next available code = 3
+    # Reserve special codes
+    # If alphabet has 2 chars: EOF = 2, EVICT_SIGNAL = 3, next available code = 4
     EOF_CODE = len(alphabet)
-    next_code = len(alphabet) + 1
+    EVICT_SIGNAL = len(alphabet) + 1
+    next_code = len(alphabet) + 2
+
+    # Track reused codes: when we evict and reuse a code, track it so we can send
+    # the full entry to the decoder when we output that code
+    reused_codes = {}  # code -> entry_value
 
     # Variable-width encoding parameters
     code_bits = min_bits                # Current bit width (starts at min_bits)
@@ -335,8 +340,21 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
             else:
                 # Phrase not in dictionary - output code and add new entry
 
-                # Output code for current phrase
+                # Check if this code was reused via eviction
                 code_to_write = dictionary[current]
+                if code_to_write in reused_codes:
+                    # Send EVICT_SIGNAL with full entry to sync decoder
+                    entry = reused_codes[code_to_write]
+                    writer.write(EVICT_SIGNAL, code_bits)
+                    writer.write(code_to_write, code_bits)
+                    writer.write(len(entry), 8)
+                    for ch in entry:
+                        writer.write(ord(ch), 8)
+                    del reused_codes[code_to_write]
+                    if log:
+                        print(f"[SIGNAL] Sent EVICT_SIGNAL + code {code_to_write} + entry '{entry}' ({len(entry)} chars)")
+
+                # Output code for current phrase
                 writer.write(code_to_write, code_bits)
 
                 if log:
@@ -380,6 +398,10 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
                         # Add new phrase using the evicted code
                         dictionary[combined] = evicted_code
                         lru_tracker.use(combined)  # Mark as most recently used
+
+                        # Track this reused code so we can send it to decoder
+                        reused_codes[evicted_code] = combined
+
                         if log:
                             print(f"[DICT] Added '{combined}' -> {evicted_code} (reused code, dict_size={len(dictionary)})")
 
@@ -388,6 +410,18 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
 
     # Write final phrase
     final_code = dictionary[current]
+    if final_code in reused_codes:
+        # Send EVICT_SIGNAL for final phrase if needed
+        entry = reused_codes[final_code]
+        writer.write(EVICT_SIGNAL, code_bits)
+        writer.write(final_code, code_bits)
+        writer.write(len(entry), 8)
+        for ch in entry:
+            writer.write(ord(ch), 8)
+        del reused_codes[final_code]
+        if log:
+            print(f"[SIGNAL] Sent EVICT_SIGNAL + code {final_code} + entry '{entry}' ({len(entry)} chars) before FINAL")
+
     writer.write(final_code, code_bits)
     if log:
         print(f"[ENCODE] Output FINAL code {final_code} for phrase '{current}' (bits={code_bits})")
@@ -459,9 +493,10 @@ def decompress(input_file, output_file, log=False):
     # Example: {0: 'a', 1: 'b'} for alphabet ['a', 'b']
     dictionary = {i: char for i, char in enumerate(alphabet)}
 
-    # EOF is alphabet_size
+    # Reserve special codes
     EOF_CODE = alphabet_size
-    next_code = alphabet_size + 1  # Next available dictionary code (alphabet_size reserved for EOF)
+    EVICT_SIGNAL = alphabet_size + 1
+    next_code = alphabet_size + 2  # Next available dictionary code
 
     # Variable-width decoding parameters (must match encoder)
     code_bits = min_bits
@@ -523,6 +558,35 @@ def decompress(input_file, output_file, log=False):
             if codeword is None:
                 raise ValueError("Corrupted file: unexpected end of file (no EOF marker)")
 
+            # Check for EVICT_SIGNAL
+            if codeword == EVICT_SIGNAL:
+                # Read which code was evicted/reused
+                code_num = reader.read(code_bits)
+                # Read entry length
+                entry_len = reader.read(8)
+                # Read entry characters
+                entry_chars = []
+                for _ in range(entry_len):
+                    entry_chars.append(chr(reader.read(8)))
+                entry_value = ''.join(entry_chars)
+
+                if log:
+                    print(f"[SIGNAL] Received EVICT_SIGNAL + code {code_num} + entry '{entry_value}' ({entry_len} chars)")
+
+                # Update dictionary with the new entry at the evicted code position
+                if code_num in dictionary:
+                    old_val = dictionary[code_num]
+                    if log:
+                        print(f"[EVICT] Replacing code {code_num} ('{old_val}') with '{entry_value}' via EVICT_SIGNAL")
+
+                dictionary[code_num] = entry_value
+                lru_tracker.use(code_num)
+
+                # Read the actual codeword to decode (should be the same as code_num)
+                codeword = reader.read(code_bits)
+                if codeword is None:
+                    raise ValueError("Corrupted file: unexpected end after EVICT_SIGNAL")
+
             # Check for EOF
             if codeword == EOF_CODE:
                 if log:
@@ -579,8 +643,8 @@ def decompress(input_file, output_file, log=False):
                         print(f"[DICT] Added {lru_code} -> '{new_entry}' (reused code, dict_size={len(dictionary)})")
 
             # Update LRU for codeword if it's a tracked entry (not alphabet)
-            # Only track codes >= alphabet_size + 1 (skip EOF code too)
-            if codeword >= alphabet_size + 1:
+            # Only track codes >= alphabet_size + 2 (skip EOF and EVICT_SIGNAL codes)
+            if codeword >= alphabet_size + 2:
                 lru_tracker.use(codeword)
                 if log:
                     print(f"[LRU] Updated code {codeword} as recently used")

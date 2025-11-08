@@ -1,0 +1,179 @@
+
+=== DECOMPRESSION START ===
+Alphabet: ['a', 'b']
+Alphabet size: 2, EOF_CODE: 2
+Initial next_code: 3, code_bits: 3, max_size: 16
+Initial dictionary: {0: 'a', 1: 'b'}
+
+[DECODE] Read code 0 -> 'a' (bits=3)
+[DECODE] Read code 0 -> 'a' (bits=3)
+[DICT] Added 3 -> 'aa' (dict_size=3)
+[DECODE] Read code 1 -> 'b' (bits=3)
+[DICT] Added 4 -> 'ab' (dict_size=4)
+[DECODE] Read code 3 -> 'aa' (bits=3)
+[DICT] Added 5 -> 'ba' (dict_size=5)
+[LRU] Updated code 3 as recently used
+[DECODE] Read code 6 (SPECIAL CASE: next_code) -> 'aaa' (bits=3)
+[DICT] Added 6 -> 'aaa' (dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 5 -> 'ba' (bits=3)
+[DICT] Added 7 -> 'aaab' (dict_size=7)
+[LRU] Updated code 5 as recently used
+[BITS] Increased from 3 to 4 bits (next_code=8, threshold=16)
+[DECODE] Read code 6 -> 'aaa' (bits=4)
+[DICT] Added 8 -> 'baa' (dict_size=8)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 7 -> 'aaab' (bits=4)
+[DICT] Added 9 -> 'aaaa' (dict_size=9)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 4 -> 'ab' (bits=4)
+[DICT] Added 10 -> 'aaaba' (dict_size=10)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 8 -> 'baa' (bits=4)
+[DICT] Added 11 -> 'abb' (dict_size=11)
+[LRU] Updated code 8 as recently used
+[DECODE] Read code 1 -> 'b' (bits=4)
+[DICT] Added 12 -> 'baab' (dict_size=12)
+[DECODE] Read code 13 (SPECIAL CASE: next_code) -> 'bb' (bits=4)
+[DICT] Added 13 -> 'bb' (dict_size=13)
+[LRU] Updated code 13 as recently used
+[DECODE] Read code 3 -> 'aa' (bits=4)
+[DICT] Added 14 -> 'bba' (dict_size=14)
+[LRU] Updated code 3 as recently used
+[DECODE] Read code 12 -> 'baab' (bits=4)
+[DICT] Added 15 -> 'aab' (dict_size=15)
+[LRU] Updated code 12 as recently used
+[DECODE] Read code 11 -> 'abb' (bits=4)
+[EVICT] Evicted code 5 ('ba'), dict_size=15
+[DICT] Added 5 -> 'baaba' (reused code, dict_size=15)
+[LRU] Updated code 11 as recently used
+[DECODE] Read code 1 -> 'b' (bits=4)
+[EVICT] Evicted code 6 ('aaa'), dict_size=15
+[DICT] Added 6 -> 'abbb' (reused code, dict_size=15)
+[DECODE] Read code 4 -> 'ab' (bits=4)
+[EVICT] Evicted code 9 ('aaaa'), dict_size=15
+[DICT] Added 9 -> 'ba' (reused code, dict_size=15)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'ab' (bits=4)
+[EVICT] Evicted code 7 ('aaab'), dict_size=15
+[DICT] Added 7 -> 'aba' (reused code, dict_size=15)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 11 -> 'abb' (bits=4)
+[EVICT] Evicted code 10 ('aaaba'), dict_size=15
+[DICT] Added 10 -> 'aba' (reused code, dict_size=15)
+[LRU] Updated code 11 as recently used
+[DECODE] Read code 3 -> 'aa' (bits=4)
+[EVICT] Evicted code 8 ('baa'), dict_size=15
+[DICT] Added 8 -> 'abba' (reused code, dict_size=15)
+[LRU] Updated code 3 as recently used
+[DECODE] Read code 15 -> 'aab' (bits=4)
+[EVICT] Evicted code 13 ('bb'), dict_size=15
+[DICT] Added 13 -> 'aaa' (reused code, dict_size=15)
+[LRU] Updated code 15 as recently used
+[DECODE] Read code 13 -> 'aaa' (bits=4)
+[EVICT] Evicted code 14 ('bba'), dict_size=15
+[DICT] Added 14 -> 'aaba' (reused code, dict_size=15)
+[LRU] Updated code 13 as recently used
+[DECODE] Read code 1 -> 'b' (bits=4)
+[EVICT] Evicted code 12 ('baab'), dict_size=15
+[DICT] Added 12 -> 'aaab' (reused code, dict_size=15)
+[DECODE] Read code 1 -> 'b' (bits=4)
+[EVICT] Evicted code 5 ('baaba'), dict_size=15
+[DICT] Added 5 -> 'bb' (reused code, dict_size=15)
+[DECODE] Read code 1 -> 'b' (bits=4)
+[EVICT] Evicted code 6 ('abbb'), dict_size=15
+[DICT] Added 6 -> 'bb' (reused code, dict_size=15)
+[DECODE] Read code 1 -> 'b' (bits=4)
+[EVICT] Evicted code 9 ('ba'), dict_size=15
+[DICT] Added 9 -> 'bb' (reused code, dict_size=15)
+[DECODE] Read code 0 -> 'a' (bits=4)
+[EVICT] Evicted code 7 ('aba'), dict_size=15
+[DICT] Added 7 -> 'ba' (reused code, dict_size=15)
+[DECODE] Read code 9 -> 'bb' (bits=4)
+[EVICT] Evicted code 4 ('ab'), dict_size=15
+[DICT] Added 4 -> 'ab' (reused code, dict_size=15)
+[LRU] Updated code 9 as recently used
+[DECODE] Read code 10 -> 'aba' (bits=4)
+[EVICT] Evicted code 10 ('aba'), dict_size=15
+[DICT] Added 10 -> 'bba' (reused code, dict_size=15)
+[LRU] Updated code 10 as recently used
+[DECODE] Read code 13 -> 'aaa' (bits=4)
+[EVICT] Evicted code 11 ('abb'), dict_size=15
+[DICT] Added 11 -> 'abaa' (reused code, dict_size=15)
+[LRU] Updated code 13 as recently used
+[DECODE] Read code 10 -> 'bba' (bits=4)
+[EVICT] Evicted code 8 ('abba'), dict_size=15
+[DICT] Added 8 -> 'aaab' (reused code, dict_size=15)
+[LRU] Updated code 10 as recently used
+[DECODE] Read code 11 -> 'abaa' (bits=4)
+[EVICT] Evicted code 3 ('aa'), dict_size=15
+[DICT] Added 3 -> 'bbaa' (reused code, dict_size=15)
+[LRU] Updated code 11 as recently used
+[DECODE] Read code 4 -> 'ab' (bits=4)
+[EVICT] Evicted code 15 ('aab'), dict_size=15
+[DICT] Added 15 -> 'abaaa' (reused code, dict_size=15)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=4)
+[EVICT] Evicted code 14 ('aaba'), dict_size=15
+[DICT] Added 14 -> 'aba' (reused code, dict_size=15)
+[DECODE] Read code 15 -> 'abaaa' (bits=4)
+[EVICT] Evicted code 12 ('aaab'), dict_size=15
+[DICT] Added 12 -> 'aa' (reused code, dict_size=15)
+[LRU] Updated code 15 as recently used
+[DECODE] Read code 12 -> 'aa' (bits=4)
+[EVICT] Evicted code 5 ('bb'), dict_size=15
+[DICT] Added 5 -> 'abaaaa' (reused code, dict_size=15)
+[LRU] Updated code 12 as recently used
+[DECODE] Read code 4 -> 'ab' (bits=4)
+[EVICT] Evicted code 6 ('bb'), dict_size=15
+[DICT] Added 6 -> 'aaa' (reused code, dict_size=15)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=4)
+[EVICT] Evicted code 7 ('ba'), dict_size=15
+[DICT] Added 7 -> 'abb' (reused code, dict_size=15)
+[DECODE] Read code 1 -> 'b' (bits=4)
+[EVICT] Evicted code 9 ('bb'), dict_size=15
+[DICT] Added 9 -> 'bb' (reused code, dict_size=15)
+[DECODE] Read code 3 -> 'bbaa' (bits=4)
+[EVICT] Evicted code 13 ('aaa'), dict_size=15
+[DICT] Added 13 -> 'bb' (reused code, dict_size=15)
+[LRU] Updated code 3 as recently used
+[DECODE] Read code 9 -> 'bb' (bits=4)
+[EVICT] Evicted code 8 ('aaab'), dict_size=15
+[DICT] Added 8 -> 'bbaab' (reused code, dict_size=15)
+[LRU] Updated code 9 as recently used
+[DECODE] Read code 11 -> 'abaa' (bits=4)
+[EVICT] Evicted code 10 ('bba'), dict_size=15
+[DICT] Added 10 -> 'bba' (reused code, dict_size=15)
+[LRU] Updated code 11 as recently used
+[DECODE] Read code 11 -> 'abaa' (bits=4)
+[EVICT] Evicted code 14 ('aba'), dict_size=15
+[DICT] Added 14 -> 'abaaa' (reused code, dict_size=15)
+[LRU] Updated code 11 as recently used
+[DECODE] Read code 15 -> 'abaaa' (bits=4)
+[EVICT] Evicted code 15 ('abaaa'), dict_size=15
+[DICT] Added 15 -> 'abaaa' (reused code, dict_size=15)
+[LRU] Updated code 15 as recently used
+[DECODE] Read code 9 -> 'bb' (bits=4)
+[EVICT] Evicted code 5 ('abaaaa'), dict_size=15
+[DICT] Added 5 -> 'abaaab' (reused code, dict_size=15)
+[LRU] Updated code 9 as recently used
+[DECODE] Read code 9 -> 'bb' (bits=4)
+[EVICT] Evicted code 12 ('aa'), dict_size=15
+[DICT] Added 12 -> 'bbb' (reused code, dict_size=15)
+[LRU] Updated code 9 as recently used
+[DECODE] Read code 0 -> 'a' (bits=4)
+[EVICT] Evicted code 6 ('aaa'), dict_size=15
+[DICT] Added 6 -> 'bba' (reused code, dict_size=15)
+[DECODE] Read code 1 -> 'b' (bits=4)
+[EVICT] Evicted code 4 ('ab'), dict_size=15
+[DICT] Added 4 -> 'ab' (reused code, dict_size=15)
+[DECODE] Read code 14 -> 'abaaa' (bits=4)
+[EVICT] Evicted code 7 ('abb'), dict_size=15
+[DICT] Added 7 -> 'ba' (reused code, dict_size=15)
+[LRU] Updated code 14 as recently used
+[DECODE] Read EOF code 2
+
+=== DECOMPRESSION END ===
+
+Decompressed: test_rand100.lzw -> test_rand100_out.txt

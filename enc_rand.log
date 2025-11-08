@@ -1,0 +1,178 @@
+
+=== COMPRESSION START ===
+Alphabet: ['a', 'b']
+Alphabet size: 2, EOF_CODE: 2
+Initial next_code: 3, code_bits: 3, max_size: 16
+Initial dictionary: {'a': 0, 'b': 1}
+
+[ENCODE] Output code 0 for phrase 'a' (bits=3)
+[DICT] Added 'aa' -> 3 (dict_size=3)
+[ENCODE] Output code 0 for phrase 'a' (bits=3)
+[DICT] Added 'ab' -> 4 (dict_size=4)
+[ENCODE] Output code 1 for phrase 'b' (bits=3)
+[DICT] Added 'ba' -> 5 (dict_size=5)
+[ENCODE] Output code 3 for phrase 'aa' (bits=3)
+[LRU] Updated 'aa' as recently used
+[DICT] Added 'aaa' -> 6 (dict_size=6)
+[ENCODE] Output code 6 for phrase 'aaa' (bits=3)
+[LRU] Updated 'aaa' as recently used
+[DICT] Added 'aaab' -> 7 (dict_size=7)
+[ENCODE] Output code 5 for phrase 'ba' (bits=3)
+[LRU] Updated 'ba' as recently used
+[BITS] Increased from 3 to 4 bits (next_code=8, threshold=16)
+[DICT] Added 'baa' -> 8 (dict_size=8)
+[ENCODE] Output code 6 for phrase 'aaa' (bits=4)
+[LRU] Updated 'aaa' as recently used
+[DICT] Added 'aaaa' -> 9 (dict_size=9)
+[ENCODE] Output code 7 for phrase 'aaab' (bits=4)
+[LRU] Updated 'aaab' as recently used
+[DICT] Added 'aaaba' -> 10 (dict_size=10)
+[ENCODE] Output code 4 for phrase 'ab' (bits=4)
+[LRU] Updated 'ab' as recently used
+[DICT] Added 'abb' -> 11 (dict_size=11)
+[ENCODE] Output code 8 for phrase 'baa' (bits=4)
+[LRU] Updated 'baa' as recently used
+[DICT] Added 'baab' -> 12 (dict_size=12)
+[ENCODE] Output code 1 for phrase 'b' (bits=4)
+[DICT] Added 'bb' -> 13 (dict_size=13)
+[ENCODE] Output code 13 for phrase 'bb' (bits=4)
+[LRU] Updated 'bb' as recently used
+[DICT] Added 'bba' -> 14 (dict_size=14)
+[ENCODE] Output code 3 for phrase 'aa' (bits=4)
+[LRU] Updated 'aa' as recently used
+[DICT] Added 'aab' -> 15 (dict_size=15)
+[ENCODE] Output code 12 for phrase 'baab' (bits=4)
+[LRU] Updated 'baab' as recently used
+[EVICT] Evicted 'ba' (code 5), dict_size=14
+[DICT] Added 'baaba' -> 5 (reused code, dict_size=15)
+[ENCODE] Output code 11 for phrase 'abb' (bits=4)
+[LRU] Updated 'abb' as recently used
+[EVICT] Evicted 'aaa' (code 6), dict_size=14
+[DICT] Added 'abbb' -> 6 (reused code, dict_size=15)
+[ENCODE] Output code 1 for phrase 'b' (bits=4)
+[EVICT] Evicted 'aaaa' (code 9), dict_size=14
+[DICT] Added 'ba' -> 9 (reused code, dict_size=15)
+[ENCODE] Output code 4 for phrase 'ab' (bits=4)
+[LRU] Updated 'ab' as recently used
+[EVICT] Evicted 'aaab' (code 7), dict_size=14
+[DICT] Added 'aba' -> 7 (reused code, dict_size=15)
+[ENCODE] Output code 4 for phrase 'ab' (bits=4)
+[LRU] Updated 'ab' as recently used
+[EVICT] Evicted 'aaaba' (code 10), dict_size=14
+[DICT] Added 'aba' -> 10 (reused code, dict_size=14)
+[ENCODE] Output code 11 for phrase 'abb' (bits=4)
+[LRU] Updated 'abb' as recently used
+[EVICT] Evicted 'baa' (code 8), dict_size=13
+[DICT] Added 'abba' -> 8 (reused code, dict_size=14)
+[ENCODE] Output code 3 for phrase 'aa' (bits=4)
+[LRU] Updated 'aa' as recently used
+[EVICT] Evicted 'bb' (code 13), dict_size=13
+[DICT] Added 'aaa' -> 13 (reused code, dict_size=14)
+[ENCODE] Output code 15 for phrase 'aab' (bits=4)
+[LRU] Updated 'aab' as recently used
+[EVICT] Evicted 'bba' (code 14), dict_size=13
+[DICT] Added 'aaba' -> 14 (reused code, dict_size=14)
+[ENCODE] Output code 13 for phrase 'aaa' (bits=4)
+[LRU] Updated 'aaa' as recently used
+[EVICT] Evicted 'baab' (code 12), dict_size=13
+[DICT] Added 'aaab' -> 12 (reused code, dict_size=14)
+[ENCODE] Output code 1 for phrase 'b' (bits=4)
+[EVICT] Evicted 'baaba' (code 5), dict_size=13
+[DICT] Added 'bb' -> 5 (reused code, dict_size=14)
+[ENCODE] Output code 1 for phrase 'b' (bits=4)
+[EVICT] Evicted 'abbb' (code 6), dict_size=13
+[DICT] Added 'bb' -> 6 (reused code, dict_size=13)
+[ENCODE] Output code 1 for phrase 'b' (bits=4)
+[EVICT] Evicted 'ba' (code 9), dict_size=12
+[DICT] Added 'bb' -> 9 (reused code, dict_size=12)
+[ENCODE] Output code 1 for phrase 'b' (bits=4)
+[EVICT] Evicted 'ab' (code 4), dict_size=11
+[DICT] Added 'ba' -> 4 (reused code, dict_size=12)
+[ENCODE] Output code 0 for phrase 'a' (bits=4)
+[EVICT] Evicted 'aba' (code 10), dict_size=11
+[DICT] Added 'ab' -> 10 (reused code, dict_size=12)
+[ENCODE] Output code 9 for phrase 'bb' (bits=4)
+[LRU] Updated 'bb' as recently used
+[EVICT] Evicted 'abb' (code 11), dict_size=11
+[DICT] Added 'bba' -> 11 (reused code, dict_size=12)
+[ENCODE] Output code 10 for phrase 'ab' (bits=4)
+[LRU] Updated 'ab' as recently used
+[EVICT] Evicted 'abba' (code 8), dict_size=11
+[DICT] Added 'aba' -> 8 (reused code, dict_size=12)
+[ENCODE] Output code 13 for phrase 'aaa' (bits=4)
+[LRU] Updated 'aaa' as recently used
+[EVICT] Evicted 'aa' (code 3), dict_size=11
+[DICT] Added 'aaaa' -> 3 (reused code, dict_size=12)
+[ENCODE] Output code 10 for phrase 'ab' (bits=4)
+[LRU] Updated 'ab' as recently used
+[EVICT] Evicted 'aab' (code 15), dict_size=11
+[DICT] Added 'abb' -> 15 (reused code, dict_size=12)
+[ENCODE] Output code 11 for phrase 'bba' (bits=4)
+[LRU] Updated 'bba' as recently used
+[EVICT] Evicted 'aaba' (code 14), dict_size=11
+[DICT] Added 'bbab' -> 14 (reused code, dict_size=12)
+[ENCODE] Output code 4 for phrase 'ba' (bits=4)
+[LRU] Updated 'ba' as recently used
+[EVICT] Evicted 'aaab' (code 12), dict_size=11
+[DICT] Added 'baa' -> 12 (reused code, dict_size=12)
+[ENCODE] Output code 0 for phrase 'a' (bits=4)
+[EVICT] Evicted 'bb' (code 9), dict_size=11
+[DICT] Added 'aa' -> 9 (reused code, dict_size=12)
+[ENCODE] Output code 15 for phrase 'abb' (bits=4)
+[LRU] Updated 'abb' as recently used
+[EVICT] Evicted 'aba' (code 8), dict_size=11
+[DICT] Added 'abbb' -> 8 (reused code, dict_size=12)
+[ENCODE] Output code 12 for phrase 'baa' (bits=4)
+[LRU] Updated 'baa' as recently used
+[EVICT] Evicted 'aaa' (code 13), dict_size=11
+[DICT] Added 'baab' -> 13 (reused code, dict_size=12)
+[ENCODE] Output code 4 for phrase 'ba' (bits=4)
+[LRU] Updated 'ba' as recently used
+[EVICT] Evicted 'aaaa' (code 3), dict_size=11
+[DICT] Added 'bab' -> 3 (reused code, dict_size=12)
+[ENCODE] Output code 1 for phrase 'b' (bits=4)
+[EVICT] Evicted 'ab' (code 10), dict_size=11
+[DICT] Added 'bb' -> 10 (reused code, dict_size=12)
+[ENCODE] Output code 1 for phrase 'b' (bits=4)
+[EVICT] Evicted 'bba' (code 11), dict_size=11
+[DICT] Added 'bb' -> 11 (reused code, dict_size=11)
+[ENCODE] Output code 3 for phrase 'bab' (bits=4)
+[LRU] Updated 'bab' as recently used
+[EVICT] Evicted 'bbab' (code 14), dict_size=10
+[DICT] Added 'baba' -> 14 (reused code, dict_size=11)
+[ENCODE] Output code 9 for phrase 'aa' (bits=4)
+[LRU] Updated 'aa' as recently used
+[EVICT] Evicted 'abb' (code 15), dict_size=10
+[DICT] Added 'aab' -> 15 (reused code, dict_size=11)
+[ENCODE] Output code 11 for phrase 'bb' (bits=4)
+[LRU] Updated 'bb' as recently used
+[EVICT] Evicted 'abbb' (code 8), dict_size=10
+[DICT] Added 'bbb' -> 8 (reused code, dict_size=11)
+[ENCODE] Output code 11 for phrase 'bb' (bits=4)
+[LRU] Updated 'bb' as recently used
+[EVICT] Evicted 'baa' (code 12), dict_size=10
+[DICT] Added 'bba' -> 12 (reused code, dict_size=11)
+[ENCODE] Output code 15 for phrase 'aab' (bits=4)
+[LRU] Updated 'aab' as recently used
+[EVICT] Evicted 'baab' (code 13), dict_size=10
+[DICT] Added 'aaba' -> 13 (reused code, dict_size=11)
+[ENCODE] Output code 9 for phrase 'aa' (bits=4)
+[LRU] Updated 'aa' as recently used
+[EVICT] Evicted 'ba' (code 4), dict_size=10
+[DICT] Added 'aaa' -> 4 (reused code, dict_size=11)
+[ENCODE] Output code 9 for phrase 'aa' (bits=4)
+[LRU] Updated 'aa' as recently used
+[EVICT] Evicted 'bab' (code 3), dict_size=10
+[DICT] Added 'aaa' -> 3 (reused code, dict_size=10)
+[ENCODE] Output code 0 for phrase 'a' (bits=4)
+[EVICT] Evicted 'baba' (code 14), dict_size=9
+[DICT] Added 'ab' -> 14 (reused code, dict_size=10)
+[ENCODE] Output code 1 for phrase 'b' (bits=4)
+[EVICT] Evicted 'bbb' (code 8), dict_size=9
+[DICT] Added 'ba' -> 8 (reused code, dict_size=10)
+[ENCODE] Output FINAL code 14 for phrase 'ab' (bits=4)
+[ENCODE] Output EOF code 2 (bits=4)
+
+=== COMPRESSION END ===
+
+Compressed: test_rand100.txt -> test_rand100.lzw

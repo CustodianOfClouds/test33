@@ -1,0 +1,33 @@
+
+=== DECOMPRESSION START ===
+Alphabet: ['a', 'b']
+Alphabet size: 2, EOF_CODE: 2, EVICT_SIGNAL: 3
+Initial next_code: 4, code_bits: 9, max_size: 16
+Initial dictionary: {0: 'a', 1: 'b'}
+
+[DECODE] Read code 0 -> 'a' (bits=9)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[DICT] Added 4 -> 'ab' (dict_size=3)
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[DICT] Added 5 -> 'ba' (dict_size=4)
+[LRU] Updated code 4 as recently used
+[DECODE] Code 6 (next_code case) -> 'aba' (bits=9)
+[DICT] Added 6 -> 'aba' (dict_size=5)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[DICT] Added 7 -> 'abab' (dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Code 8 (next_code case) -> 'bab' (bits=9)
+[DICT] Added 8 -> 'bab' (dict_size=7)
+[LRU] Updated code 8 as recently used
+[DECODE] Read code 7 -> 'abab' (bits=9)
+[DICT] Added 9 -> 'baba' (dict_size=8)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 7 -> 'abab' (bits=9)
+[DICT] Added 10 -> 'ababa' (dict_size=9)
+[LRU] Updated code 7 as recently used
+[DECODE] Read EOF code 2
+
+=== DECOMPRESSION END ===
+
+Decompressed: test_ab10.lzw -> test_ab10_out.txt

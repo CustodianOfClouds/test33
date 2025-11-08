@@ -1,0 +1,32 @@
+
+=== COMPRESSION START ===
+Alphabet: ['a', 'b']
+Alphabet size: 2, EOF_CODE: 2, EVICT_SIGNAL: 3
+Initial next_code: 4, code_bits: 9, max_size: 16
+Initial dictionary: {'a': 0, 'b': 1}
+
+[ENCODE] Output code 0 for phrase 'a' (bits=9)
+[DICT] Added 'ab' -> 4 (dict_size=3)
+[ENCODE] Output code 1 for phrase 'b' (bits=9)
+[DICT] Added 'ba' -> 5 (dict_size=4)
+[ENCODE] Output code 4 for phrase 'ab' (bits=9)
+[LRU] Updated 'ab' as recently used
+[DICT] Added 'aba' -> 6 (dict_size=5)
+[ENCODE] Output code 6 for phrase 'aba' (bits=9)
+[LRU] Updated 'aba' as recently used
+[DICT] Added 'abab' -> 7 (dict_size=6)
+[ENCODE] Output code 5 for phrase 'ba' (bits=9)
+[LRU] Updated 'ba' as recently used
+[DICT] Added 'bab' -> 8 (dict_size=7)
+[ENCODE] Output code 8 for phrase 'bab' (bits=9)
+[LRU] Updated 'bab' as recently used
+[DICT] Added 'baba' -> 9 (dict_size=8)
+[ENCODE] Output code 7 for phrase 'abab' (bits=9)
+[LRU] Updated 'abab' as recently used
+[DICT] Added 'ababa' -> 10 (dict_size=9)
+[ENCODE] Output FINAL code 7 for phrase 'abab' (bits=9)
+[ENCODE] Output EOF code 2 (bits=9)
+
+=== COMPRESSION END ===
+
+Compressed: test_ab10.txt -> test_ab10.lzw
