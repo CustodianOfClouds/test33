@@ -1,33 +1,2635 @@
 
 === DECOMPRESSION START ===
 Alphabet: ['a', 'b']
-Alphabet size: 2, EOF_CODE: 2, EVICT_SIGNAL: 3
-Initial next_code: 4, code_bits: 9, max_size: 16
+Alphabet size: 2, EOF_CODE: 2
+Initial next_code: 4, code_bits: 9, max_size: 8
 Initial dictionary: {0: 'a', 1: 'b'}
 
 [DECODE] Read code 0 -> 'a' (bits=9)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[DICT] Added 4 -> 'aa' (dict_size=3)
 [DECODE] Read code 1 -> 'b' (bits=9)
-[DICT] Added 4 -> 'ab' (dict_size=3)
-[DECODE] Read code 4 -> 'ab' (bits=9)
-[DICT] Added 5 -> 'ba' (dict_size=4)
+[DICT] Added 5 -> 'ab' (dict_size=4)
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[DICT] Added 6 -> 'ba' (dict_size=5)
 [LRU] Updated code 4 as recently used
-[DECODE] Code 6 (next_code case) -> 'aba' (bits=9)
-[DICT] Added 6 -> 'aba' (dict_size=5)
+[DECODE] Read code 7 (SPECIAL CASE: next_code) -> 'aaa' (bits=9)
+[DICT] Added 7 -> 'aaa' (dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'aaab' (reused code, dict_size=6)
 [LRU] Updated code 6 as recently used
-[DECODE] Read code 5 -> 'ba' (bits=9)
-[DICT] Added 7 -> 'abab' (dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aa' (2 chars)
+[EVICT] Replacing code 7 ('aaa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('aaab'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aaa' (3 chars)
+[EVICT] Replacing code 5 ('aa') with 'aaa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aaa' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'aaa' (reused code, dict_size=6)
 [LRU] Updated code 5 as recently used
-[DECODE] Code 8 (next_code case) -> 'bab' (bits=9)
-[DICT] Added 8 -> 'bab' (dict_size=7)
-[LRU] Updated code 8 as recently used
-[DECODE] Read code 7 -> 'abab' (bits=9)
-[DICT] Added 9 -> 'baba' (dict_size=8)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('baa'), dict_size=6
+[DICT] Added 4 -> 'aaab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('aaa'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ba' (2 chars)
+[EVICT] Replacing code 4 ('aaab') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('aaa'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ab' (2 chars)
+[EVICT] Replacing code 7 ('ba') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'baa' (reused code, dict_size=6)
 [LRU] Updated code 7 as recently used
-[DECODE] Read code 7 -> 'abab' (bits=9)
-[DICT] Added 10 -> 'ababa' (dict_size=9)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'abb' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('baa'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('abb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'abb' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('baa'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('aba'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aba' (3 chars)
+[EVICT] Replacing code 6 ('abb') with 'aba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aba' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'abab' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aba'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aa' (2 chars)
+[EVICT] Replacing code 6 ('aba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('abab'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'aaa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ba' (2 chars)
+[EVICT] Replacing code 5 ('aaa') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ab' (2 chars)
+[EVICT] Replacing code 7 ('baa') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
 [LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('aa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'abb' (3 chars)
+[EVICT] Replacing code 5 ('bb') with 'abb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'abb' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('abb'), dict_size=6
+[DICT] Added 4 -> 'abba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bba'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aa' (2 chars)
+[EVICT] Replacing code 5 ('abb') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('abba'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'abb' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('aaa'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('abb'), dict_size=6
+[DICT] Added 4 -> 'aba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aa' (2 chars)
+[EVICT] Replacing code 5 ('bb') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'aab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('aab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('aba'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aab' (3 chars)
+[EVICT] Replacing code 7 ('aa') with 'aab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aab' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aaba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('aaba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('aab'), dict_size=6
+[DICT] Added 7 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'aba' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bba'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bb' (2 chars)
+[EVICT] Replacing code 5 ('aba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aa' (2 chars)
+[EVICT] Replacing code 6 ('bba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aaa' (3 chars)
+[EVICT] Replacing code 4 ('ab') with 'aaa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aaa' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ba' (2 chars)
+[EVICT] Replacing code 5 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'aaab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('aaa'), dict_size=6
+[DICT] Added 7 -> 'bab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('aaa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('aaab'), dict_size=6
+[DICT] Added 6 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bab'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 5 -> 'bbb' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('baa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'bbbb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bbb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('bbbb'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aba' (3 chars)
+[EVICT] Replacing code 7 ('aba') with 'aba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aba' (bits=9)
+[EVICT] Evicted code 4 ('bba'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'abaa' (4 chars)
+[EVICT] Replacing code 6 ('ba') with 'abaa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'abaa' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'abaa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'abaab' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('aba'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('abaa'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('abaa'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('abaab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aa' (2 chars)
+[EVICT] Replacing code 6 ('aa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aaa' (3 chars)
+[EVICT] Replacing code 5 ('bba') with 'aaa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aaa' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aaab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aaab' (4 chars)
+[EVICT] Replacing code 4 ('aaab') with 'aaab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aaab' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('aaa'), dict_size=6
+[DICT] Added 7 -> 'aaaba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('aaa'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aaab'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('aaaba'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('ba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('abb'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aa' (2 chars)
+[EVICT] Replacing code 7 ('bb') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('bbb'), dict_size=6
+[DICT] Added 5 -> 'aaa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ba' (2 chars)
+[EVICT] Replacing code 5 ('aaa') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aa' (2 chars)
+[EVICT] Replacing code 4 ('baa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aaa' (3 chars)
+[EVICT] Replacing code 6 ('ab') with 'aaa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aaa' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'aaaa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('aaa'), dict_size=6
+[DICT] Added 5 -> 'aab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aab' (3 chars)
+[EVICT] Replacing code 7 ('aaaa') with 'aab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aab' (bits=9)
+[EVICT] Evicted code 6 ('aaa'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'aabb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('aab'), dict_size=6
+[DICT] Added 5 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('aab'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aabb'), dict_size=6
+[DICT] Added 4 -> 'bab' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('baa'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bab'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('baa'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aa' (2 chars)
+[EVICT] Replacing code 4 ('bbb') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bba' (3 chars)
+[EVICT] Replacing code 5 ('bba') with 'bba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bba' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'bbaa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('aab'), dict_size=6
+[DICT] Added 6 -> 'aaa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('bbaa'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('aaa') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('aba'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'aba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aa' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('baa'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aaa' (3 chars)
+[EVICT] Replacing code 4 ('aa') with 'aaa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aaa' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('aba'), dict_size=6
+[DICT] Added 7 -> 'aaab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('aaab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('aaa'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aaa'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ab' (2 chars)
+[EVICT] Replacing code 4 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('aa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('aba'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('abb'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bbb'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aa' (2 chars)
+[EVICT] Replacing code 5 ('aa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('bba') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aaa'), dict_size=6
+[DICT] Added 4 -> 'aab' (reused code, dict_size=6)
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aaa' (3 chars)
+[EVICT] Replacing code 7 ('aba') with 'aaa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aaa' (bits=9)
+[EVICT] Evicted code 4 ('aab'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'aaaa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aaa'), dict_size=6
+[DICT] Added 4 -> 'aab' (reused code, dict_size=6)
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('aaa'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aab' (3 chars)
+[EVICT] Replacing code 6 ('aaaa') with 'aab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aab' (bits=9)
+[EVICT] Evicted code 4 ('aab'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'aabb' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aaa'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ba' (2 chars)
+[EVICT] Replacing code 4 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ba' (bits=9)
+[EVICT] Evicted code 6 ('aab'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bb' (2 chars)
+[EVICT] Replacing code 5 ('bb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('aabb'), dict_size=6
+[DICT] Added 7 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bab'), dict_size=6
+[DICT] Added 7 -> 'bbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bba'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aa' (2 chars)
+[EVICT] Replacing code 4 ('aa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('bbb'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('baa'), dict_size=6
+[DICT] Added 7 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('aab'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('bab'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('bb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('baa'), dict_size=6
+[DICT] Added 4 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bab'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aa' (2 chars)
+[EVICT] Replacing code 7 ('aa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('aba'), dict_size=6
+[DICT] Added 5 -> 'abb' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'abb' (3 chars)
+[EVICT] Replacing code 5 ('abb') with 'abb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'abb' (bits=9)
+[EVICT] Evicted code 4 ('aaa'), dict_size=6
+[DICT] Added 4 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'abbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aba'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('abb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('abbb'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aba' (3 chars)
+[EVICT] Replacing code 7 ('bb') with 'aba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aba' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('baa'), dict_size=6
+[DICT] Added 4 -> 'abab' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('aba'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aa' (2 chars)
+[EVICT] Replacing code 7 ('aba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('abab'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ba' (2 chars)
+[EVICT] Replacing code 5 ('aaa') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('aab'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('bab'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('baa'), dict_size=6
+[DICT] Added 7 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bab'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aa' (2 chars)
+[EVICT] Replacing code 6 ('baa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ba' (2 chars)
+[EVICT] Replacing code 4 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('aaa'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 4 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('aab'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('baa'), dict_size=6
+[DICT] Added 7 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'baa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bab' (3 chars)
+[EVICT] Replacing code 7 ('bab') with 'bab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bab' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'baba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('baa'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bab'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('baba'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aa' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('ab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ab' (2 chars)
+[EVICT] Replacing code 4 ('aaa') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'bbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ba' (2 chars)
+[EVICT] Replacing code 4 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ba' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('bbb'), dict_size=6
+[DICT] Added 5 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bab'), dict_size=6
+[DICT] Added 5 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('ba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('baa'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aba' (3 chars)
+[EVICT] Replacing code 5 ('abb') with 'aba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aba' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'abab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bba'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('aba'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('aba'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ba' (2 chars)
+[EVICT] Replacing code 7 ('aa') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('abab'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('bb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bbb' (3 chars)
+[EVICT] Replacing code 6 ('bab') with 'bbb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bbb' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'bbbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('bbb'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bbb'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ba' (2 chars)
+[EVICT] Replacing code 7 ('bbbb') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bb' (2 chars)
+[EVICT] Replacing code 5 ('aa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'bba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bba' (3 chars)
+[EVICT] Replacing code 6 ('bab') with 'bba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bba' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'bbab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bbb' (3 chars)
+[EVICT] Replacing code 7 ('ab') with 'bbb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bbb' (bits=9)
+[EVICT] Evicted code 4 ('bba'), dict_size=6
+[DICT] Added 4 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bba'), dict_size=6
+[DICT] Added 6 -> 'bbba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bbab'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bbb'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ab' (2 chars)
+[EVICT] Replacing code 4 ('ba') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('bbb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ba' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 6 ('bbba'), dict_size=6
+[DICT] Added 6 -> 'abb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('abb'), dict_size=6
+[DICT] Added 6 -> 'aba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aa' (2 chars)
+[EVICT] Replacing code 5 ('ba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('baa'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aaa' (3 chars)
+[EVICT] Replacing code 7 ('aa') with 'aaa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aaa' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('aba'), dict_size=6
+[DICT] Added 6 -> 'aaab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aaa'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('aaab') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('aaa'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('bb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('bab'), dict_size=6
+[DICT] Added 5 -> 'baa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aa' (2 chars)
+[EVICT] Replacing code 7 ('bb') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('bbb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'baa' (3 chars)
+[EVICT] Replacing code 4 ('aa') with 'baa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'baa' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('baa'), dict_size=6
+[DICT] Added 5 -> 'baab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aa' (2 chars)
+[EVICT] Replacing code 5 ('baab') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('aab'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ba' (2 chars)
+[EVICT] Replacing code 7 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('baa'), dict_size=6
+[DICT] Added 4 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'bab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bb' (2 chars)
+[EVICT] Replacing code 5 ('aa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('aab'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bab'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bbb' (3 chars)
+[EVICT] Replacing code 4 ('bb') with 'bbb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bbb' (bits=9)
+[EVICT] Evicted code 7 ('bbb'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('bba') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'bbba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'abb' (3 chars)
+[EVICT] Replacing code 7 ('abb') with 'abb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'abb' (bits=9)
+[EVICT] Evicted code 4 ('bbb'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('bbba'), dict_size=6
+[DICT] Added 5 -> 'abba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 7 -> 'abb' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('abba'), dict_size=6
+[DICT] Added 5 -> 'abbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aa' (2 chars)
+[EVICT] Replacing code 4 ('aba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('abbb'), dict_size=6
+[DICT] Added 5 -> 'aaa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('aaa') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('baa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('abb'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ba' (2 chars)
+[EVICT] Replacing code 5 ('bbb') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('aa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bba' (3 chars)
+[EVICT] Replacing code 4 ('bab') with 'bba' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bba' (bits=9)
+[EVICT] Evicted code 6 ('bba'), dict_size=6
+[DICT] Added 6 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bbab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bbb'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('bba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('bbab'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bba' (3 chars)
+[EVICT] Replacing code 5 ('bb') with 'bba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bba' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'abb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bba'), dict_size=6
+[DICT] Added 7 -> 'bbab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('abb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('bbab'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aba' (3 chars)
+[EVICT] Replacing code 7 ('baa') with 'aba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aba' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'abaa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aba'), dict_size=6
+[DICT] Added 4 -> 'abb' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('aba'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'abb' (3 chars)
+[EVICT] Replacing code 4 ('abb') with 'abb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'abb' (bits=9)
+[EVICT] Evicted code 6 ('abaa'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('bb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'abbb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bbb' (3 chars)
+[EVICT] Replacing code 6 ('ba') with 'bbb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bbb' (bits=9)
+[EVICT] Evicted code 4 ('abb'), dict_size=6
+[DICT] Added 4 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('abbb'), dict_size=6
+[DICT] Added 5 -> 'bbba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bbb'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('bbba') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('bbb'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aa' (2 chars)
+[EVICT] Replacing code 6 ('aa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aaa' (3 chars)
+[EVICT] Replacing code 7 ('aba') with 'aaa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aaa' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aaaa' (4 chars)
+[EVICT] Replacing code 5 ('ab') with 'aaaa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aaaa' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'aaaa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aaa'), dict_size=6
+[DICT] Added 4 -> 'aaaaa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('aaa'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('aaaa'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('aaaa'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aaaaa'), dict_size=6
+[DICT] Added 4 -> 'abb' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aa' (2 chars)
+[EVICT] Replacing code 6 ('ab') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('abb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ba' (2 chars)
+[EVICT] Replacing code 5 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('baa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('aab'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aa' (2 chars)
+[EVICT] Replacing code 7 ('bb') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aaa'), dict_size=6
+[DICT] Added 4 -> 'aab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('aab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ab' (2 chars)
+[EVICT] Replacing code 7 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('bba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'abb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'bab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('ab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('abb'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bab'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('bba') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('ba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bba' (3 chars)
+[EVICT] Replacing code 6 ('bbb') with 'bba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bba' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bba'), dict_size=6
+[DICT] Added 7 -> 'bbab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bbab' (4 chars)
+[EVICT] Replacing code 4 ('ab') with 'bbab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bbab' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bba'), dict_size=6
+[DICT] Added 6 -> 'bbabb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bbab'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('bbabb') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bbab'), dict_size=6
+[DICT] Added 4 -> 'bab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bb' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bab'), dict_size=6
+[DICT] Added 4 -> 'bba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aa' (2 chars)
+[EVICT] Replacing code 4 ('bba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bbb'), dict_size=6
+[DICT] Added 6 -> 'aaa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('aaa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ab' (2 chars)
+[EVICT] Replacing code 7 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 7 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('bba'), dict_size=6
+[DICT] Added 4 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('aba'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bbb' (3 chars)
+[EVICT] Replacing code 4 ('bb') with 'bbb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bbb' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bbbb' (4 chars)
+[EVICT] Replacing code 7 ('bbb') with 'bbbb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bbbb' (bits=9)
+[EVICT] Evicted code 5 ('abb'), dict_size=6
+[DICT] Added 5 -> 'bbbb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'bbbba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aa' (2 chars)
+[EVICT] Replacing code 6 ('bbbba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('bbb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bbbb'), dict_size=6
+[DICT] Added 5 -> 'aab' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('bbbb'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aab' (3 chars)
+[EVICT] Replacing code 4 ('aa') with 'aab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aab' (bits=9)
+[EVICT] Evicted code 5 ('aab'), dict_size=6
+[DICT] Added 5 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'aabb' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('aaa'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aab'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ba' (2 chars)
+[EVICT] Replacing code 5 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('aabb'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bab' (3 chars)
+[EVICT] Replacing code 6 ('bb') with 'bab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bab' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'baba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bab'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aa' (2 chars)
+[EVICT] Replacing code 7 ('baba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('bab'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('aab'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bb' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('bab'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('baa'), dict_size=6
+[DICT] Added 7 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bba' (3 chars)
+[EVICT] Replacing code 7 ('bba') with 'bba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bba' (bits=9)
+[EVICT] Evicted code 6 ('bbb'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'bbaa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'abb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bba'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aa' (2 chars)
+[EVICT] Replacing code 5 ('bbaa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('abb'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ba' (2 chars)
+[EVICT] Replacing code 7 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ba' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'baa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ab' (2 chars)
+[EVICT] Replacing code 4 ('aaa') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('baa'), dict_size=6
+[DICT] Added 5 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('aa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('aba'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('abb'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aa' (2 chars)
+[EVICT] Replacing code 5 ('bba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bbb'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aaa' (3 chars)
+[EVICT] Replacing code 7 ('aa') with 'aaa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aaa' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aaa'), dict_size=6
+[DICT] Added 4 -> 'aaaa' (reused code, dict_size=6)
+[DECODE] Read code 7 -> 'aaa' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'aaab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bb' (2 chars)
+[EVICT] Replacing code 5 ('aaab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('aaaa'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'bbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('aaa'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('bbb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aa' (2 chars)
+[EVICT] Replacing code 4 ('aa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ab' (2 chars)
+[EVICT] Replacing code 7 ('aab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aa' (2 chars)
+[EVICT] Replacing code 5 ('aa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('baa'), dict_size=6
+[DICT] Added 4 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'aab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('aba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('aaa'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('aab'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bbb' (3 chars)
+[EVICT] Replacing code 7 ('ab') with 'bbb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bbb' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'bbbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bbb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bbb'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('aa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('bbbb'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aa' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aab' (3 chars)
+[EVICT] Replacing code 4 ('aab') with 'aab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aab' (bits=9)
+[EVICT] Evicted code 7 ('bba'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('aaa'), dict_size=6
+[DICT] Added 5 -> 'aabb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ba' (2 chars)
+[EVICT] Replacing code 5 ('aabb') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('bb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aab'), dict_size=6
+[DICT] Added 4 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bbb' (3 chars)
+[EVICT] Replacing code 4 ('bba') with 'bbb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bbb' (bits=9)
+[EVICT] Evicted code 7 ('bab'), dict_size=6
+[DICT] Added 7 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bbba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bbb'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('bbb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('bbba'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('bbb') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'abb' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bba'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('aba'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('abb'), dict_size=6
+[DICT] Added 4 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ba' (2 chars)
+[EVICT] Replacing code 7 ('bb') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'abb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'abb' (3 chars)
+[EVICT] Replacing code 5 ('abb') with 'abb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'abb' (bits=9)
+[EVICT] Evicted code 4 ('aba'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'baa' (3 chars)
+[EVICT] Replacing code 4 ('baa') with 'baa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'baa' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'abbb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'baab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('abb'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('abbb'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('baa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('baab'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'aa' (2 chars)
+[EVICT] Replacing code 5 ('bba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aaa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ab' (2 chars)
+[EVICT] Replacing code 4 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'aba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'aa' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'aa' (bits=9)
+[EVICT] Evicted code 7 ('aaa'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'aab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aab' (3 chars)
+[EVICT] Replacing code 7 ('aa') with 'aab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aab' (bits=9)
+[EVICT] Evicted code 5 ('aba'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'aabb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('aabb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('aab'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('aab'), dict_size=6
+[DICT] Added 7 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('bbb') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bba'), dict_size=6
+[DICT] Added 7 -> 'aba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aa' (2 chars)
+[EVICT] Replacing code 7 ('aba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'aab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bb' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'bbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('aab'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bbb' (3 chars)
+[EVICT] Replacing code 6 ('ba') with 'bbb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bbb' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ab' (2 chars)
+[EVICT] Replacing code 4 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'bbba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bbb'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('bbb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('bbba'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bbb' (3 chars)
+[EVICT] Replacing code 5 ('bb') with 'bbb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bbb' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'bbba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bbb'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('aa') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('bbb'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('bbba'), dict_size=6
+[DICT] Added 7 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bb' (2 chars)
+[EVICT] Replacing code 5 ('ba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('aba'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('abb'), dict_size=6
+[DICT] Added 4 -> 'aba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aba' (3 chars)
+[EVICT] Replacing code 7 ('bb') with 'aba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aba' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bba'), dict_size=6
+[DICT] Added 6 -> 'abab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aba'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('abab') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('aba'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'aba' (reused code, dict_size=6)
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('baa'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('aba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'abb' (3 chars)
+[EVICT] Replacing code 7 ('abb') with 'abb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'abb' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bba' (3 chars)
+[EVICT] Replacing code 6 ('bb') with 'bba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bba' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'abbb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'bbaa' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('abbb'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aa' (2 chars)
+[EVICT] Replacing code 7 ('aa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('bba'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('bbaa'), dict_size=6
+[DICT] Added 5 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'baa' (3 chars)
+[EVICT] Replacing code 5 ('aab') with 'baa' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'baa' (bits=9)
+[EVICT] Evicted code 4 ('baa'), dict_size=6
+[DICT] Added 4 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bab' (3 chars)
+[EVICT] Replacing code 4 ('bab') with 'bab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bab' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'baab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'babb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bb' (2 chars)
+[EVICT] Replacing code 5 ('baa') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('baab'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bab'), dict_size=6
+[DICT] Added 4 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('babb'), dict_size=6
+[DICT] Added 6 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aa' (2 chars)
+[EVICT] Replacing code 4 ('bba') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 6 ('aa'), dict_size=6
+[DICT] Added 6 -> 'aaa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ba' (2 chars)
+[EVICT] Replacing code 5 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('ab'), dict_size=6
+[DICT] Added 7 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 5 -> 'ba' (bits=9)
+[EVICT] Evicted code 6 ('aaa'), dict_size=6
+[DICT] Added 6 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'baa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('aab'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('ab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 6 ('bab'), dict_size=6
+[DICT] Added 6 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'bbb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('bb') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('baa'), dict_size=6
+[DICT] Added 4 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ba' (2 chars)
+[EVICT] Replacing code 4 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'abb' (3 chars)
+[EVICT] Replacing code 7 ('abb') with 'abb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'abb' (bits=9)
+[EVICT] Evicted code 5 ('bbb'), dict_size=6
+[DICT] Added 5 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'abbb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'bb' (2 chars)
+[EVICT] Replacing code 4 ('ba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('baa'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('abbb'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bba' (3 chars)
+[EVICT] Replacing code 7 ('bbb') with 'bba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bba' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ab' (2 chars)
+[EVICT] Replacing code 6 ('bba') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ab' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'bbaa' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'abb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('bba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('bbaa'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'abb' (3 chars)
+[EVICT] Replacing code 4 ('bb') with 'abb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'abb' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('abb'), dict_size=6
+[DICT] Added 5 -> 'abba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bba'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('abb'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'ab' (2 chars)
+[EVICT] Replacing code 5 ('abba') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('aa'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ab'), dict_size=6
+[DICT] Added 6 -> 'aba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aba' (3 chars)
+[EVICT] Replacing code 7 ('ba') with 'aba' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aba' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aa' (2 chars)
+[EVICT] Replacing code 4 ('aa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'abaa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('aba'), dict_size=6
+[DICT] Added 6 -> 'aab' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('aba'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('abaa'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('aab') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ab' (2 chars)
+[EVICT] Replacing code 4 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'baa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('ba'), dict_size=6
+[DICT] Added 5 -> 'abb' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('baa'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aa' (2 chars)
+[EVICT] Replacing code 4 ('ab') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('abb'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('bb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('ba'), dict_size=6
+[DICT] Added 7 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bba' (3 chars)
+[EVICT] Replacing code 5 ('bba') with 'bba' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bba' (bits=9)
+[EVICT] Evicted code 7 ('aab'), dict_size=6
+[DICT] Added 7 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'bbab' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'aa' (2 chars)
+[EVICT] Replacing code 7 ('bbb') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bbab'), dict_size=6
+[DICT] Added 4 -> 'aab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ba') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('aa'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bab' (3 chars)
+[EVICT] Replacing code 7 ('aa') with 'bab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bab' (bits=9)
+[EVICT] Evicted code 4 ('aab'), dict_size=6
+[DICT] Added 4 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'baba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('ab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 4 ('bab'), dict_size=6
+[DICT] Added 4 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 7 ('bab'), dict_size=6
+[DICT] Added 7 -> 'bbb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('baba'), dict_size=6
+[DICT] Added 5 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('bb'), dict_size=6
+[DICT] Added 4 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bbb'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'ab' (2 chars)
+[EVICT] Replacing code 7 ('ab') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'ab' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'aa' (2 chars)
+[EVICT] Replacing code 4 ('aa') with 'aa' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 5 ('bba'), dict_size=6
+[DICT] Added 5 -> 'aba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'aab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('ab') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('aba'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 4 -> 'aa' (bits=9)
+[EVICT] Evicted code 4 ('aa'), dict_size=6
+[DICT] Added 4 -> 'bba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'bba' (bits=9)
+[EVICT] Evicted code 6 ('aab'), dict_size=6
+[DICT] Added 6 -> 'aab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'bbab' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'bb' (reused code, dict_size=6)
+[DECODE] Read code 4 -> 'bba' (bits=9)
+[EVICT] Evicted code 6 ('aab'), dict_size=6
+[DICT] Added 6 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 4 -> 'bba' (bits=9)
+[EVICT] Evicted code 5 ('bbab'), dict_size=6
+[DICT] Added 5 -> 'bbab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'bbab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'bb' (2 chars)
+[EVICT] Replacing code 6 ('bb') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('bbab'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 4 ('bba'), dict_size=6
+[DICT] Added 4 -> 'bbb' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 7 ('bbab'), dict_size=6
+[DICT] Added 7 -> 'ba' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ba' (2 chars)
+[EVICT] Replacing code 4 ('bbb') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ba' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ab' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bb'), dict_size=6
+[DICT] Added 6 -> 'bab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 7 + entry 'bb' (2 chars)
+[EVICT] Replacing code 7 ('ba') with 'bb' via EVICT_SIGNAL
+[DECODE] Read code 7 -> 'bb' (bits=9)
+[EVICT] Evicted code 5 ('ab'), dict_size=6
+[DICT] Added 5 -> 'bb' (reused code, dict_size=6)
+[LRU] Updated code 7 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 4 ('ba'), dict_size=6
+[DICT] Added 4 -> 'bba' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 6 ('bab'), dict_size=6
+[DICT] Added 6 -> 'ab' (reused code, dict_size=6)
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'ab' (2 chars)
+[EVICT] Replacing code 4 ('bba') with 'ab' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'ab' (bits=9)
+[EVICT] Evicted code 5 ('bb'), dict_size=6
+[DICT] Added 5 -> 'ba' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 6 + entry 'ba' (2 chars)
+[EVICT] Replacing code 6 ('ab') with 'ba' via EVICT_SIGNAL
+[DECODE] Read code 6 -> 'ba' (bits=9)
+[EVICT] Evicted code 7 ('bb'), dict_size=6
+[DICT] Added 7 -> 'abb' (reused code, dict_size=6)
+[LRU] Updated code 6 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 5 + entry 'bab' (3 chars)
+[EVICT] Replacing code 5 ('ba') with 'bab' via EVICT_SIGNAL
+[DECODE] Read code 5 -> 'bab' (bits=9)
+[EVICT] Evicted code 4 ('ab'), dict_size=6
+[DICT] Added 4 -> 'bab' (reused code, dict_size=6)
+[LRU] Updated code 5 as recently used
+[SIGNAL] Received EVICT_SIGNAL + code 4 + entry 'babb' (4 chars)
+[EVICT] Replacing code 4 ('bab') with 'babb' via EVICT_SIGNAL
+[DECODE] Read code 4 -> 'babb' (bits=9)
+[EVICT] Evicted code 7 ('abb'), dict_size=6
+[DICT] Added 7 -> 'babb' (reused code, dict_size=6)
+[LRU] Updated code 4 as recently used
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 6 ('ba'), dict_size=6
+[DICT] Added 6 -> 'babba' (reused code, dict_size=6)
+[DECODE] Read code 0 -> 'a' (bits=9)
+[EVICT] Evicted code 5 ('bab'), dict_size=6
+[DICT] Added 5 -> 'aa' (reused code, dict_size=6)
+[DECODE] Read code 1 -> 'b' (bits=9)
+[EVICT] Evicted code 7 ('babb'), dict_size=6
+[DICT] Added 7 -> 'ab' (reused code, dict_size=6)
 [DECODE] Read EOF code 2
 
 === DECOMPRESSION END ===
 
-Decompressed: test_ab10.lzw -> test_ab10_out.txt
+Decompressed: test_compressed.lzw -> test_output.txt

@@ -350,12 +350,13 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
                     writer.write(len(entry), 8)
                     for ch in entry:
                         writer.write(ord(ch), 8)
+                    # No need to send code_to_write again - decoder will reuse it
                     del reused_codes[code_to_write]
                     if log:
                         print(f"[SIGNAL] Sent EVICT_SIGNAL + code {code_to_write} + entry '{entry}' ({len(entry)} chars)")
-
-                # Output code for current phrase
-                writer.write(code_to_write, code_bits)
+                else:
+                    # Normal output: just send the code
+                    writer.write(code_to_write, code_bits)
 
                 if log:
                     print(f"[ENCODE] Output code {code_to_write} for phrase '{current}' (bits={code_bits})")
@@ -418,11 +419,13 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
         writer.write(len(entry), 8)
         for ch in entry:
             writer.write(ord(ch), 8)
+        # No need to send final_code again - decoder will reuse it
         del reused_codes[final_code]
         if log:
             print(f"[SIGNAL] Sent EVICT_SIGNAL + code {final_code} + entry '{entry}' ({len(entry)} chars) before FINAL")
-
-    writer.write(final_code, code_bits)
+    else:
+        # Normal output: just send the code
+        writer.write(final_code, code_bits)
     if log:
         print(f"[ENCODE] Output FINAL code {final_code} for phrase '{current}' (bits={code_bits})")
 
@@ -582,10 +585,8 @@ def decompress(input_file, output_file, log=False):
                 dictionary[code_num] = entry_value
                 lru_tracker.use(code_num)
 
-                # Read the actual codeword to decode (should be the same as code_num)
-                codeword = reader.read(code_bits)
-                if codeword is None:
-                    raise ValueError("Corrupted file: unexpected end after EVICT_SIGNAL")
+                # Reuse code_num as the codeword to decode (no need to read again)
+                codeword = code_num
 
             # Check for EOF
             if codeword == EOF_CODE:
