@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-LZW Compression Tool (Reset Mode)
+LZW Compression Tool (Freeze Mode)
 
-Implements LZW compression with the "reset" policy: when the dictionary
-reaches maximum size, it outputs a RESET code, clears the dictionary back
-to the initial alphabet, and continues compression with a fresh dictionary.
+Implements LZW compression with the "freeze" policy: when the dictionary
+reaches maximum size, it stops adding new entries and continues using
+the existing dictionary.
 
 Usage:
-    Compress:   python3 lzw_reset.py compress input.txt output.lzw --alphabet ascii
-    Decompress: python3 lzw_reset.py decompress input.lzw output.txt
+    Compress:   python3 LZW-Freeze.py compress input.txt output.lzw --alphabet ascii
+    Decompress: python3 LZW-Freeze.py decompress input.lzw output.txt
 """
 
 import sys
@@ -16,7 +16,7 @@ import argparse
 
 # Predefined alphabets - add more here as needed
 ALPHABETS = {
-    'ascii': [chr(i) for i in range(128)],        # Standard ASCII (0-127)
+    'ascii': [chr(i) for i in range(128)],         # Standard ASCII (0-127)
     'extendedascii': [chr(i) for i in range(256)], # Extended ASCII (0-255)
     'ab': ['a', 'b']                               # Binary alphabet for testing
 }
@@ -149,14 +149,14 @@ class BitReader:
 
 def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     """
-    Compress a file using LZW with reset policy.
+    Compress a file using LZW with freeze policy.
 
     Algorithm:
     1. Initialize dictionary with single-character entries from alphabet
-    2. Read input byte by byte (streaming - handles huge files)
+    2. Read input character by character (streaming - handles huge files)
     3. Find longest match in dictionary
     4. Output code for match, add (match + next_char) to dictionary
-    5. When dictionary fills (2^max_bits entries), output RESET code and clear dictionary
+    5. When dictionary fills (2^max_bits entries), stop adding (freeze)
 
     Args:
         input_file: File to compress
@@ -168,7 +168,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     Edge cases handled:
     - Empty file: Just write EOF marker
     - Characters not in alphabet: Raise error immediately
-    - Dictionary full: Output RESET code, clear dictionary to alphabet, continue (reset)
+    - Dictionary full: Stop adding, continue with existing entries (freeze)
     - Bit width increments: Check before EOF to match decoder expectations
     """
     alphabet = ALPHABETS[alphabet_name]
@@ -186,11 +186,10 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # Example: {'a': 0, 'b': 1} for alphabet ['a', 'b']
     dictionary = {char: i for i, char in enumerate(alphabet)}
 
-    # Reserve codes: EOF = alphabet_size, RESET = alphabet_size + 1
-    # If alphabet has 2 chars: codes 0,1 are chars, EOF=2, RESET=3, next available=4
+    # Reserve code for EOF (End Of File marker)
+    # If alphabet has 2 chars, EOF = 2, next available code = 3
     EOF_CODE = len(alphabet)
-    RESET_CODE = len(alphabet) + 1
-    next_code = len(alphabet) + 2
+    next_code = len(alphabet) + 1
 
     # Variable-width encoding parameters
     code_bits = min_bits                # Current bit width (starts at min_bits)
@@ -221,12 +220,11 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
         # Main LZW compression loop
         while True:
-            # Read next byte
-            byte_data = f.read(1)
-            if not byte_data:  # End of input
+            byte_data = f.read(1)  # Read next byte
+            if not byte_data:          # End of input
                 break
 
-            # Convert byte to character for dictionary matching
+            # Convert byte to character
             char = chr(byte_data[0])
 
             # Validate character
@@ -245,9 +243,9 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                 # Output code for current phrase
                 writer.write(dictionary[current], code_bits)
 
-                # Add new entry to dictionary if not full (or RESET if full)
+                # Add new entry to dictionary if not full (FREEZE policy)
                 if next_code < max_size:
-                    # Dictionary not full - check if we need to increase bit width
+                    # Check if we need to increase bit width
                     # When next_code reaches threshold (512, 1024, etc.), we need more bits
                     if next_code >= threshold and code_bits < max_bits:
                         code_bits += 1
@@ -256,21 +254,8 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                     # Add new phrase to dictionary
                     dictionary[combined] = next_code
                     next_code += 1
-                else:
-                    # Dictionary full - RESET policy: clear and start fresh
-                    # Check if we need to increase bit width before writing RESET code
-                    if next_code >= threshold and code_bits < max_bits:
-                        code_bits += 1
-                        threshold <<= 1
 
-                    # Write RESET code to signal decoder to clear its dictionary
-                    writer.write(RESET_CODE, code_bits)
-
-                    # Clear dictionary back to alphabet-only
-                    dictionary = {char: i for i, char in enumerate(alphabet)}
-                    next_code = len(alphabet) + 2  # Skip EOF and RESET codes
-                    code_bits = min_bits           # Reset to minimum bit width
-                    threshold = 1 << code_bits     # Reset threshold
+                # else freeze policy, do nothing
 
                 # Start new phrase with current character
                 current = char
@@ -285,7 +270,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # This allows EOF to work with any min_bits/alphabet combination
     if next_code >= threshold and code_bits < max_bits:
         code_bits += 1
-        # No need to update threshold here as it's never used again after this point
+        # do not need to update "threshold <<= 1" because its the last check
 
     # Write EOF marker (uses alphabet_size as the EOF code)
     writer.write(EOF_CODE, code_bits)
@@ -298,7 +283,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
 def decompress(input_file, output_file):
     """
-    Decompress a file compressed with LZW reset mode.
+    Decompress a file compressed with LZW freeze mode.
 
     Algorithm:
     1. Read header to get compression parameters and alphabet
@@ -306,15 +291,14 @@ def decompress(input_file, output_file):
     3. Read codes from compressed file
     4. Decode each code using dictionary
     5. Add new entries to dictionary as we decode (mirroring encoder)
-    6. When RESET code is encountered, clear dictionary and continue
-    7. Write decompressed output incrementally (streaming for memory efficiency)
+    6. Write decompressed output incrementally (streaming for memory efficiency)
 
     Edge cases handled:
     - Empty file: Just EOF marker, create empty output
-    - RESET code: Clear dictionary back to alphabet and continue
     - Special LZW case: Code not yet in dictionary (codeword == next_code)
       This happens when pattern like "aba" is encoded as "ab" + "a"
     - Bit width increments: Match encoder's increments exactly
+    - Dictionary full: Stop adding entries (freeze)
     """
     reader = BitReader(input_file)
 
@@ -328,10 +312,9 @@ def decompress(input_file, output_file):
     # Example: {0: 'a', 1: 'b'} for alphabet ['a', 'b']
     dictionary = {i: char for i, char in enumerate(alphabet)}
 
-    # Reserve codes: EOF = alphabet_size, RESET = alphabet_size + 1
+    # EOF is alphabet_size
     EOF_CODE = alphabet_size
-    RESET_CODE = alphabet_size + 1
-    next_code = alphabet_size + 2  # Next available dictionary code
+    next_code = alphabet_size + 1  # Next available dictionary code (alphabet_size reserved for EOF)
 
     # Variable-width decoding parameters (must match encoder)
     code_bits = min_bits
@@ -352,12 +335,13 @@ def decompress(input_file, output_file):
         return
 
     # Decode first codeword and write to output
-    # First codeword is always part of initial dictionary
+    # First codeword is always part of dictionary
     prev = dictionary[codeword]  # Previous decoded string
 
     # Write output incrementally (streaming - handles huge files)
     # Binary mode to handle all file types correctly (text and binary)
     with open(output_file, 'wb') as out:
+        # Convert string to bytes using latin-1 encoding
         out.write(prev.encode('latin-1'))
 
         # Main LZW decompression loop
@@ -371,7 +355,6 @@ def decompress(input_file, output_file):
 
             # Read next codeword
             codeword = reader.read(code_bits)
-
             # Check for file corruption
             if codeword is None:
                 raise ValueError("Corrupted file: unexpected end of file (no EOF marker)")
@@ -379,30 +362,6 @@ def decompress(input_file, output_file):
             # Check for EOF
             if codeword == EOF_CODE:
                 break
-
-            # RESET MODE: Handle RESET code
-            if codeword == RESET_CODE:
-                # Clear dictionary back to alphabet-only (mirroring encoder)
-                dictionary = {i: alphabet[i] for i in range(alphabet_size)}
-                next_code = alphabet_size + 2  # Skip EOF and RESET codes
-                code_bits = min_bits           # Reset to minimum bit width
-                threshold = 1 << code_bits     # Reset threshold
-
-                # Read next codeword after reset (at min_bits width)
-                codeword = reader.read(code_bits)
-
-                # Check for corruption
-                if codeword is None:
-                    raise ValueError("Corrupted file: unexpected end after RESET")
-
-                # Check if file ends immediately after RESET
-                if codeword == EOF_CODE:
-                    break
-
-                # Decode codeword and continue (no new entry added after RESET)
-                prev = dictionary[codeword]
-                out.write(prev.encode('latin-1'))
-                continue
 
             # Decode codeword
             if codeword in dictionary:
@@ -420,15 +379,17 @@ def decompress(input_file, output_file):
                 # Invalid codeword - corrupted file
                 raise ValueError(f"Invalid codeword: {codeword}")
 
-            # Write decoded string
+            # Write decoded string as bytes
             out.write(current.encode('latin-1'))
 
-            # Add new entry to dictionary if not full
+            # Add new entry to dictionary if not full (FREEZE policy)
             if next_code < max_size:
                 # New entry is: previous string + first char of current string
                 # This mirrors what encoder did
                 dictionary[next_code] = prev + current[0]
                 next_code += 1
+
+            # else freeze policy, do nothing
 
             # Update previous string for next iteration
             prev = current
@@ -442,7 +403,7 @@ def decompress(input_file, output_file):
 
 def main():
     """Parse command-line arguments and run compression or decompression."""
-    parser = argparse.ArgumentParser(description='LZW compression (reset mode)')
+    parser = argparse.ArgumentParser(description='LZW compression (freeze mode)')
     sub = parser.add_subparsers(dest='mode', required=True)
 
     # Compress subcommand
