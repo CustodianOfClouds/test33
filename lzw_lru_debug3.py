@@ -380,6 +380,9 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
                             print(f"[BITS] Increased from {old_bits} to {code_bits} bits (next_code={next_code}, threshold={threshold})")
 
                     # Add new phrase to dictionary and track it
+                    if not combined:
+                        print(f'ERROR at add: Adding empty entry! current="{current}", char="{char}", next_code={next_code}')
+                        import sys; sys.exit(1)
                     dictionary[combined] = next_code
                     lru_tracker.use(combined)  # Mark as most recently used
                     if log:
@@ -390,14 +393,6 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
                     lru_entry = lru_tracker.find_lru()
                     if lru_entry is not None:
                         evicted_code = dictionary[lru_entry]  # Get the code before deleting
-
-                        # If this code was previously reused but never output, remove it from reused_codes
-                        # This prevents sending stale/incorrect entries via EVICT_SIGNAL
-                        if evicted_code in reused_codes:
-                            if log:
-                                print(f"[CLEANUP] Removing code {evicted_code} from reused_codes (evicted again before output)")
-                            del reused_codes[evicted_code]
-
                         del dictionary[lru_entry]  # Remove from dictionary
                         lru_tracker.remove(lru_entry)  # Remove from LRU tracker
 
@@ -405,6 +400,9 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
                             print(f"[EVICT] Evicted '{lru_entry}' (code {evicted_code}), dict_size={len(dictionary)}")
 
                         # Add new phrase using the evicted code
+                        if not combined:
+                            print(f'ERROR at eviction: Adding empty entry! current="{current}", char="{char}", evicted_code={evicted_code}')
+                            import sys; sys.exit(1)
                         dictionary[combined] = evicted_code
                         lru_tracker.use(combined)  # Mark as most recently used
 

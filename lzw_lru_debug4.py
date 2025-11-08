@@ -390,14 +390,11 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
                     lru_entry = lru_tracker.find_lru()
                     if lru_entry is not None:
                         evicted_code = dictionary[lru_entry]  # Get the code before deleting
-
-                        # If this code was previously reused but never output, remove it from reused_codes
-                        # This prevents sending stale/incorrect entries via EVICT_SIGNAL
                         if evicted_code in reused_codes:
-                            if log:
-                                print(f"[CLEANUP] Removing code {evicted_code} from reused_codes (evicted again before output)")
+                            print(f'WARNING: Evicting code {evicted_code} that is already in reused_codes! Old reused entry: "{reused_codes[evicted_code]}", Evicted entry: "{lru_entry}"')
+                            # This code was evicted and reused, but never sent via EVICT_SIGNAL
+                            # So we need to remove it from reused_codes
                             del reused_codes[evicted_code]
-
                         del dictionary[lru_entry]  # Remove from dictionary
                         lru_tracker.remove(lru_entry)  # Remove from LRU tracker
 

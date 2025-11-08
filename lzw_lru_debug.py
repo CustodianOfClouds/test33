@@ -390,14 +390,6 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
                     lru_entry = lru_tracker.find_lru()
                     if lru_entry is not None:
                         evicted_code = dictionary[lru_entry]  # Get the code before deleting
-
-                        # If this code was previously reused but never output, remove it from reused_codes
-                        # This prevents sending stale/incorrect entries via EVICT_SIGNAL
-                        if evicted_code in reused_codes:
-                            if log:
-                                print(f"[CLEANUP] Removing code {evicted_code} from reused_codes (evicted again before output)")
-                            del reused_codes[evicted_code]
-
                         del dictionary[lru_entry]  # Remove from dictionary
                         lru_tracker.remove(lru_entry)  # Remove from LRU tracker
 
@@ -410,6 +402,9 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16, lo
 
                         # Track this reused code so we can send it to decoder
                         reused_codes[evicted_code] = combined
+                        if not combined:
+                            print(f'ERROR: Empty combined! current="{current}", char="{char}", pos={pos}')
+                            sys.exit(1)
 
                         if log:
                             print(f"[DICT] Added '{combined}' -> {evicted_code} (reused code, dict_size={len(dictionary)})")
