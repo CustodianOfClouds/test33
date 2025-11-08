@@ -1,8 +1,8 @@
 # Test artifacts
-test_input.txt
-test_output.lzw
-test_decoded.txt
-*_debug.log
+test_*.txt
+test_*.lzw
+*.log
+debug_states.py
 
 # Python cache
 __pycache__/
