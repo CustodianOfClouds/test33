@@ -415,14 +415,14 @@ def decompress(input_file, output_file):
     3. Read codes from compressed file
     4. Decode each code using dictionary (or handle EVICT_SIGNAL)
     5. Add new entries to dictionary as we decode (mirroring encoder)
-    6. When dictionary fills, evict LRU entry before adding new one
+    6. When dictionary fills, encoder sends EVICT_SIGNAL with eviction instructions
     7. Write decompressed output incrementally (streaming for memory efficiency)
 
     LRU Eviction Details:
-    - Track dictionary codes (not alphabet codes) with LRUTracker
-    - When dictionary is full, handle EVICT_SIGNAL from encoder
-    - Update access time whenever a code is read from compressed file
-    - Single-char codes (alphabet) are never tracked or evicted
+    - Decoder does NOT track LRU (encoder does that)
+    - Encoder sends EVICT_SIGNAL: [code_to_evict][new_entry_data]
+    - Decoder simply follows encoder's instructions
+    - This keeps decoder simple and mirrors encoder's dictionary state
 
     Edge cases handled:
     - Empty file: Just EOF marker, create empty output
@@ -457,9 +457,9 @@ def decompress(input_file, output_file):
     code_bits = min_bits
     threshold = 1 << code_bits
 
-    # LRU tracker for dictionary codes (NOT alphabet codes)
-    # Tracks only multi-character sequences added during decompression
-    lru_tracker = LRUTracker()
+    # NOTE: Decoder does NOT need LRU tracker!
+    # Encoder sends EVICT_SIGNAL telling decoder exactly which code to evict
+    # Decoder just follows instructions from encoder
 
     # Read first codeword
     codeword = reader.read(code_bits)
@@ -515,13 +515,9 @@ def decompress(input_file, output_file):
                 entry_length = reader.read(16)
                 new_entry = ''.join(chr(reader.read(8)) for _ in range(entry_length))
 
-                # Remove old entry from LRU tracker (if tracked)
-                if evict_code in dictionary and evict_code >= alphabet_size + 1:
-                    lru_tracker.remove(evict_code)
-
                 # Add new entry at the evicted code position
+                # (Encoder already decided which code to evict)
                 dictionary[evict_code] = new_entry
-                lru_tracker.use(evict_code)
 
                 # Don't output anything, don't update prev, continue to next code
                 continue
@@ -551,15 +547,9 @@ def decompress(input_file, output_file):
                 # New entry is: previous string + first char of current string
                 # This mirrors what encoder did
                 dictionary[next_code] = prev + current[0]
-                lru_tracker.use(next_code)  # Mark as most recently used
                 next_code += 1
             # Note: When next_code >= EVICT_SIGNAL, encoder will send EVICT_SIGNAL
             # instead of normal codes, so we don't need an else block here
-
-            # Update LRU for codeword if it's a tracked entry (not alphabet)
-            # Only track codes >= alphabet_size + 1 (skip EOF code too)
-            if codeword >= alphabet_size + 1 and codeword < EVICT_SIGNAL:
-                lru_tracker.use(codeword)
 
             # Update previous string for next iteration
             prev = current
