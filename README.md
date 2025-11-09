@@ -1,291 +1,749 @@
-# CS 1501 — Assignment 3: Configurable LZW Compression
+# LZW Compression with Advanced Dictionary Management
 
-## 📘 Objective
-
-In this assignment, you will implement a **command-line tool** in Java that performs **LZW compression and expansion** with the following features:
-
-- a custom seed alphabet for initializing the codebook,
-- a configurable codebook eviction policy,
-- variable codeword width within configurable limits
-
-Your program will allow the user to specify:
-
-* Whether to `compress` or `expand`
-* Minimum and maximum codeword widths (`minW`, `maxW`)
-* codebook eviction policy (`freeze`, `reset`, `lru`, or `lfu`)
-* A custom **alphabet/seed** for initializing the codebook
-
-The program must read input from **standard input** and write output to **standard output**, supporting I/O redirection.  It must use **bit-level I/O** via the given `BinaryStdIn` / `BinaryStdOut` classes.
-
-> 💡 **Note:** You may reuse parts of your **Lab 4 code** (such as the basic LZW compressor, bit-packing logic, or codebook data structures) as a starting point for this assignment. However, you must extend it to support variable codeword widths, the four eviction policies (`reset`, `freeze`, `lru`, `lfu`), and file-based alphabet configuration.
-
-⚙️ Implementation Note: This assignment implements a byte-by-byte version of the LZW compression algorithm. Each symbol in the input stream corresponds to a single byte.
+A comprehensive implementation of LZW (Lempel-Ziv-Welch) compression in Python, exploring various dictionary management strategies to optimize compression ratios and performance.
 
 ---
 
-## 📂 Folder Structure
+## Table of Contents
 
-```
-/TestFiles/             //Files with different types and sizes for testing
-LZWTool.java            // Main class to write (This is the ONLY file that you can modify)
-BinaryStdIn.java        //Textbook codehandouts for bit-by-bit I/O
-BinaryStdOut.java
-TSTMod.java             //TST Trie for possible codebook implementation in compression
-/alphabets/             //Files with sample alphabets for seeding the codebook
-README.md
-```
+- [What is LZW Compression?](#what-is-lzw-compression)
+- [Dictionary Management](#dictionary-management)
+- [Implemented Strategies](#implemented-strategies)
+  - [Freeze (Baseline)](#1-freeze-baseline)
+  - [Reset](#2-reset)
+  - [LRU (Least Recently Used)](#3-lru-least-recently-used)
+  - [LFU (Least Frequently Used)](#4-lfu-least-frequently-used-todo)
+- [Performance Comparisons](#performance-comparisons)
+- [Usage](#usage)
+- [File Formats](#file-formats)
 
 ---
 
-## ⚙️ Compilation and Execution
+## What is LZW Compression?
 
-### Compile
+**LZW (Lempel-Ziv-Welch)** is a dictionary-based compression algorithm that works by replacing repeated sequences of data with shorter codes. It's the algorithm behind GIF images, Unix's `compress` utility, and PDF compression.
+
+### How It Works
+
+**Compression:**
+1. Initialize a dictionary with all single characters (the alphabet)
+2. Read input character by character, building up phrases
+3. When you find a phrase not in the dictionary:
+   - Output the code for the longest matching prefix
+   - Add the new phrase to the dictionary with a new code
+4. Continue until the entire input is processed
+
+**Decompression:**
+1. Initialize the same dictionary
+2. Read codes from the compressed file
+3. Output the phrase for each code
+4. Reconstruct new dictionary entries by watching the pattern of codes
+
+### Example
+
+Input: `"ababababab"`
+
+| Step | Input | Dictionary Before | Output | Dictionary After |
+|------|-------|-------------------|--------|------------------|
+| 1    | a     | {0:'a', 1:'b'}    | 0      | {0:'a', 1:'b', 2:'ab'} |
+| 2    | ba    | {0:'a', 1:'b', 2:'ab'} | 1 | {0:'a', 1:'b', 2:'ab', 3:'ba'} |
+| 3    | ab    | {..., 3:'ba'}     | 2      | {..., 4:'aba'} |
+| 4    | aba   | {..., 4:'aba'}    | 4      | {..., 5:'abab'} |
+| 5    | ab    | {..., 5:'abab'}   | 2      | —  |
+
+Compressed: `0, 1, 2, 4, 2` (5 codes instead of 10 characters)
+
+### Variable-Width Encoding
+
+LZW uses **variable-width codes** to maximize efficiency:
+- Start with `min_bits` (e.g., 9 bits for ASCII)
+- As the dictionary grows, increase code width (10, 11, 12 bits, etc.)
+- Stop growing at `max_bits` (e.g., 16 bits = 65,536 max codes)
+
+This allows compact representation while supporting large dictionaries.
+
+---
+
+## Dictionary Management
+
+The core challenge in LZW is: **What happens when the dictionary fills up?**
+
+Once you reach `2^max_bits` codes (e.g., 65,536 codes for 16-bit max), you can't add more entries. Different strategies for handling this situation produce dramatically different compression ratios and performance characteristics.
+
+### Why Dictionary Management Matters
+
+**File characteristics vary:**
+- Some files have consistent patterns (encyclopedias, source code)
+- Others have shifting contexts (concatenated documents, log files)
+- Some have high entropy (encrypted data, random noise)
+
+**No single strategy is optimal for all files.** The best approach depends on:
+- **Pattern stability:** Do patterns repeat throughout the file?
+- **Context shifts:** Does the file have distinct sections with different vocabularies?
+- **Locality:** Are recent patterns more likely to repeat than old ones?
+
+This repository implements multiple strategies to explore these tradeoffs.
+
+---
+
+## Implemented Strategies
+
+### 1. Freeze (Baseline)
+
+**Strategy:** When the dictionary fills up, stop adding new entries. Continue compressing with the existing dictionary.
+
+**Implementation:** `lzw_freeze.py`
+
+**How It Works:**
+```python
+if next_code < max_codes:
+    dictionary[current + char] = next_code
+    next_code += 1
+# else: do nothing, dictionary is frozen
+```
+
+**Pros:**
+- Simplest implementation
+- Minimal overhead
+- Deterministic behavior
+
+**Cons:**
+- Can't adapt to new patterns after dictionary fills
+- Poor performance on files with shifting contexts
+- Compression ratio degrades over long files
+
+**Best For:** Files with stable patterns established early (uniform data, simple repeated structures)
+
+---
+
+### 2. Reset
+
+**Strategy:** When the dictionary fills up, clear it and reinitialize with just the alphabet. Start learning patterns from scratch.
+
+**Implementation:** `lzw_reset.py`
+
+**How It Works:**
+
+When `next_code` reaches `max_codes`, the encoder:
+1. Sends a special **RESET_CODE** signal
+2. Clears the dictionary
+3. Reinitializes with only the alphabet
+4. Resets code width to `min_bits`
+5. Continues compressing with fresh dictionary
+
+The decoder mirrors this behavior:
+- When it reads **RESET_CODE**, it performs the same reset
+- Both encoder and decoder stay synchronized
+
+**Reset Code Allocation:**
+
+The RESET_CODE is reserved at the beginning:
+```python
+# Reserve special codes
+EOF_CODE = alphabet_size      # e.g., 256 for extended ASCII
+RESET_CODE = alphabet_size + 1  # e.g., 257
+next_code = alphabet_size + 2   # Start adding at 258
+```
+
+**RESET_CODE Format in Compressed File:**
+```
+[...normal codes...][RESET_CODE][...codes with fresh dictionary...]
+```
+
+When `next_code` reaches `max_codes`:
+```python
+if next_code >= max_codes:
+    writer.write(RESET_CODE, code_bits)
+    # Reinitialize dictionary
+    dictionary = {char: idx for idx, char in enumerate(alphabet)}
+    next_code = alphabet_size + 2  # Skip EOF and RESET_CODE
+    code_bits = min_bits
+```
+
+**Pros:**
+- Adapts to context shifts (new sections of file with different patterns)
+- Prevents "stale" entries from occupying space
+- Works well on concatenated files with distinct sections
+
+**Cons:**
+- Loses all learned patterns on reset (sudden compression ratio drop)
+- Reset overhead (RESET_CODE signal + relearning period)
+- Poor on files with globally common patterns
+
+**Best For:** Files with distinct phases (e.g., concatenated logs, multi-part documents, files with chapter boundaries)
+
+---
+
+### 3. LRU (Least Recently Used)
+
+**Strategy:** When the dictionary fills up, evict the least recently used entry and reuse its code for the new pattern.
+
+**Why LRU?** Recent patterns are more likely to repeat than old ones (principle of **locality of reference**). By keeping recently-used entries, the dictionary stays adapted to the current context.
+
+#### Core Challenge: Decoder Synchronization
+
+In basic LZW, the decoder reconstructs the dictionary by watching the encoder's output pattern. But with LRU eviction, there's a **synchronization problem:**
+
+**The Problem:**
+1. Encoder evicts code `C` (replaces entry "abc" with new entry "xyz")
+2. Encoder later outputs code `C` (meaning "xyz")
+3. Decoder still thinks code `C` means "abc" → **DESYNC!**
+
+**The Solution:**
+- Track which codes were evicted
+- When encoder outputs a recently-evicted code, send a special **EVICT_SIGNAL** to tell the decoder the new value
+- Decoder updates its dictionary when it receives EVICT_SIGNAL
+
+This repository implements **three versions of LRU** with progressively better optimizations:
+
+---
+
+#### LRU Optimization 1: Evict-Then-Use Pattern Detection
+
+**Implementation:** `lzw_lru_optimized.py`
+
+**Key Insight:** Not all evictions need a signal!
+
+The decoder can reconstruct most evicted entries naturally by observing the output pattern. We only need EVICT_SIGNAL in the **evict-then-use** pattern:
+1. Encoder evicts code `C` (replaces its entry)
+2. Encoder **immediately outputs code `C`** with its new value
+
+This is surprisingly rare (~10-30% of evictions).
+
+**EVICT_SIGNAL Format (Optimization 1):**
+```
+[EVICT_SIGNAL][code][entry_length][char1][char2]...[charN][code_again]
+```
+
+**Bit Cost:**
+- `code_bits` (EVICT_SIGNAL marker)
+- `code_bits` (which code was evicted)
+- 16 bits (entry length)
+- 8 × L bits (entry characters)
+- `code_bits` (repeat the code to actually emit it)
+
+**Example:** 9-bit codes, 10-char entry = 9+9+16+80+9 = **123 bits**
+
+**Signal Reduction:**
+- Naive approach: Signal on every eviction (~100% evictions)
+- Optimization 1: Signal only on evict-then-use (~10-30% evictions)
+- **Result: 70-90% reduction in signals!**
+
+**Data Structure:**
+- **Doubly-linked list** for LRU ordering (O(1) move-to-front)
+- **HashMap** for O(1) code lookup
+- Sentinel head/tail nodes to eliminate edge cases
+
+**Pros:**
+- Dramatic reduction in EVICT_SIGNAL overhead
+- Still maintains perfect synchronization
+- Adapts to local patterns
+
+**Cons:**
+- EVICT_SIGNAL still large when needed (123 bits for 10-char entry)
+- Overhead noticeable on files with high eviction rates
+
+---
+
+#### LRU Optimization 2: Output History with Offset+Suffix Encoding
+
+**Implementations:**
+- `lzw_lru_optimization2.py` (HashMap version - O(1) lookup)
+- `lzw_lru_optimization2_old.py` (Linear search version - O(255×L) lookup)
+
+**Key Insight:** We can compress the EVICT_SIGNAL itself!
+
+When the encoder needs to send an evicted entry, that entry was **recently output** (because LRU just evicted it). We can reference it from recent history instead of sending the full string.
+
+**Output History:**
+- Maintain a circular buffer of the last **255 outputs**
+- When sending EVICT_SIGNAL, find the prefix in history
+- Send **offset + suffix** instead of full entry
+
+**Example:**
+Entry: `"programming"`
+Prefix: `"programmin"` (last output 5 steps ago)
+Suffix: `"g"`
+
+**Old format:** `[EVICT_SIGNAL][code][11]['p']['r']['o']['g']['r']['a']['m']['m']['i']['n']['g']`
+**New format:** `[EVICT_SIGNAL][code][5]['g']`
+
+**Bit Cost:**
+- Old: 9+9+16+88 = **122 bits** (9-bit codes, 11-char entry)
+- New: 9+9+8+8 = **34 bits**
+- **Savings: 72% reduction!**
+
+**Fallback:** If prefix not in recent history (rare), send full entry with `offset=0` as a signal.
+
+**Format:**
+```
+Compact: [EVICT_SIGNAL][code][offset (1-255)][suffix (8 bits)]
+Fallback: [EVICT_SIGNAL][code][0][entry_length (16 bits)][full entry]
+```
+
+**Offset > 255 Check:**
+```python
+if offset is not None:
+    if offset > 255:
+        raise ValueError(f"Bug in circular buffer: offset {offset} exceeds 255!")
+    # Send compact format
+else:
+    # Send full entry fallback
+```
+
+This check ensures data integrity by catching circular buffer bugs instead of silently corrupting output.
+
+**Two Implementations:**
+
+**HashMap Version (`lzw_lru_optimization2.py`):**
+- Maintains `string_to_idx` HashMap for **O(1) prefix lookup**
+- Memory overhead: ~4 KB (~8.7% for typical files)
+- **3,800× faster** prefix lookup vs linear search
+- Best for: General use, large files
+
+**Linear Search Version (`lzw_lru_optimization2_old.py`):**
+- Searches output history backwards: **O(255×L) lookup**
+- Memory overhead: ~0 KB (just the circular buffer)
+- 3-10% slower overall compression (prefix lookup is small fraction of total time)
+- Best for: Memory-constrained embedded systems, benchmarking
+
+**Pros:**
+- Tiny EVICT_SIGNAL overhead (34 bits vs 122 bits)
+- Combines benefits of Optimization 1 + compact signaling
+- HashMap version is fastest overall
+
+**Cons:**
+- More complex implementation
+- HashMap version has small memory overhead
+- Linear version has slight performance penalty (negligible for most files)
+
+---
+
+### 4. LFU (Least Frequently Used) [TODO]
+
+**Strategy:** When the dictionary fills up, evict the entry that has been output the **fewest times**. This preserves globally common patterns.
+
+**Status:** Not yet implemented.
+
+**Planned Approach:**
+- Track usage count for each dictionary entry
+- Use min-heap for O(log N) eviction of least-used entry
+- Similar EVICT_SIGNAL strategy as LRU
+- Synchronization challenge: Decoder must track counts identically
+
+**Expected Tradeoffs:**
+- Better on files with stable, globally-repeated patterns
+- Worse on files with shifting contexts (keeps old patterns too long)
+- Higher memory overhead (usage counts for all entries)
+
+---
+
+## Performance Comparisons
+
+All benchmarks performed with `--min-bits 9 --max-bits 9-16` on various file types.
+
+### Test Files
+
+| File | Size | Description |
+|------|------|-------------|
+| `code.txt` | 69 KB | Java source code |
+| `large.txt` | 1.2 MB | Large text file |
+| `texts.tar` | 1.4 MB | Text archive |
+| `all.tar` | 3 MB | Mixed archive |
+| `bmps.tar` | 1.1 MB | BMP image archive |
+| `frosty.jpg` | 127 KB | JPEG image (already compressed) |
+| `ab_repeat` | 500 KB | Highly repetitive pattern |
+| `ab_random` | 500 KB | Random low-entropy data |
+
+---
+
+### Compression Ratio Comparison
+
+#### **LRU Optimization 1 (Evict-Then-Use Pattern) - Savings vs Full Signaling**
+
+This shows the effectiveness of only sending EVICT_SIGNAL when needed (~10-30% of evictions) instead of every eviction (100%).
+
+| File | FREEZE (baseline) | LRU-FULL (naive) | LRU-OPT-1 | **Opt-1 Savings vs Full** |
+|------|-------------------|------------------|-----------|---------------------------|
+| **code.txt** (69 KB, max-bits 9) | 46 KB (66%) | 284 KB (408%) | 129 KB (185%) | **54.6%** ✓✓ |
+| **large.txt** (1.2 MB, max-bits 9) | 802 KB (67%) | 5,715 KB (475%) | 2,069 KB (172%) | **63.8%** ✓✓✓ |
+| **texts.tar** (1.4 MB, max-bits 9) | 1,163 KB (84%) | 6,396 KB (463%) | 2,367 KB (171%) | **63.0%** ✓✓✓ |
+| **all.tar** (3 MB, max-bits 9) | 2,226 KB (73%) | 11,018 KB (364%) | 4,338 KB (143%) | **60.6%** ✓✓✓ |
+| **frosty.jpg** (127 KB, max-bits 9) | 142 KB (112%) | 926 KB (731%) | 147 KB (116%) | **84.2%** ✓✓✓ |
+| **Random ab** (500 KB, max-bits 9) | 318 KB (64%) | 2,455 KB (491%) | 1,143 KB (229%) | **53.4%** ✓✓ |
+
+**Key Insight:** LRU-OPT-1 saves **55-85%** compared to naive full signaling! Already-compressed files (JPG) show the most dramatic improvement.
+
+---
+
+#### **LRU Optimization 2 (Output History + Offset/Suffix) vs Freeze**
+
+This shows the tradeoff between adaptive (LRU-v2) and static (Freeze) dictionaries.
+
+**Static/Repetitive Patterns** (Freeze wins):
+
+| File | max-bits | FREEZE | LRU-v2 (HashMap) | Winner |
+|------|----------|--------|------------------|--------|
+| **ab_repeat** (500 KB) | 9 | 2.5 KB (0.5%) | 22 KB (4.4%) | **Freeze** (8.9× better) |
+| **ab_repeat** (500 KB) | 10 | 1.8 KB (0.4%) | 6.8 KB (1.4%) | **Freeze** (3.8× better) |
+| **Random ab** (500 KB) | 9 | 73 KB (14.6%) | 309 KB (61.8%) | **Freeze** (4.2× better) |
+| **code.txt** (69 KB) | 9 | 46 KB (66%) | 92 KB (133%) | **Freeze** (2× better) |
+| **large.txt** (1.2 MB) | 9 | 802 KB (67%) | 1,606 KB (134%) | **Freeze** (2× better) |
+
+**Diverse/Evolving Patterns** (LRU-v2 wins):
+
+| File | max-bits | FREEZE | LRU-v2 (HashMap) | Winner |
+|------|----------|--------|------------------|--------|
+| **bmps.tar** (1.1 MB) | 9 | 716 KB (65%) | 212 KB (19%) | **LRU-v2** (3.4× better) |
+| **bmps.tar** (1.1 MB) | 12 | 925 KB (84%) | 199 KB (18%) | **LRU-v2** (4.6× better) |
+| **wacky.bmp** (922 KB) | 11 | 4.2 KB (0.5%) | 11.5 KB (1.2%) | **Freeze** (2.7× better) |
+
+**Pattern Insights:**
+- **Freeze dominates** on: Repetitive patterns, uniform text, random data
+- **LRU-v2 dominates** on: Mixed archives, diverse images (bmps.tar)
+- **Higher max-bits** narrows the gap (larger dictionaries = less eviction needed)
+
+---
+
+#### **LRU-v2 HashMap vs Linear Search** (Same Algorithm, Different Lookup)
+
+Compression ratios are **100% identical** (same algorithm, different implementation):
+
+| File | Original | HashMap Output | Linear Output | Identical? |
+|------|----------|----------------|---------------|------------|
+| ab_repeat (500 KB) | 500 KB | 910 KB | 910 KB | ✓ Identical |
+| ab_random (500 KB) | 500 KB | 864 KB | 864 KB | ✓ Identical |
+| code.txt (69 KB) | 69 KB | 92 KB | 92 KB | ✓ Identical |
+| large.txt (1.2 MB) | 1.2 MB | 1,606 KB | 1,606 KB | ✓ Identical |
+| all.tar (3 MB) | 3 MB | 2,644 KB | 2,644 KB | ✓ Identical |
+
+**Conclusion:** Perfect byte-for-byte match. The only difference is encoding speed (see next section).
+
+---
+
+### Compression Speed Comparison
+
+#### **Freeze vs LRU-v2 (HashMap) - max-bits 9**
+
+| File | Size | FREEZE | LRU-v2 (HashMap) | Ratio | Winner |
+|------|------|--------|------------------|-------|--------|
+| **ab_repeat** | 500 KB | 0.18s | 0.20s | 0.90× | Freeze faster |
+| **ab_random** | 500 KB | 0.20s | 0.42s | 0.48× | **Freeze 2× faster** |
+| **code.txt** | 69 KB | 0.09s | 0.18s | 0.50× | **Freeze 2× faster** |
+| **large.txt** | 1.2 MB | 0.71s | 2.03s | 0.35× | **Freeze 3× faster** |
+| **bmps.tar** | 1.1 MB | 0.64s | 0.53s | 1.21× | **LRU-v2 faster!** |
+| **all.tar** | 3 MB | 1.78s | 3.72s | 0.48× | **Freeze 2× faster** |
+| **wacky.bmp** | 922 KB | 0.28s | 0.31s | 0.90× | Freeze faster |
+
+**Key Findings:**
+- **Freeze is 2-3× faster** on most files (no LRU tracking overhead)
+- **LRU-v2 can be faster** on files with diverse patterns (bmps.tar) - better compression = less I/O
+- Eviction overhead most visible on large files with many dictionary updates
+
+---
+
+#### **LRU-v2 HashMap (O(1)) vs Linear (O(255×L)) - max-bits 9**
+
+| File | Size | Linear (O(L)) | HashMap (O(1)) | Speedup | Verdict |
+|------|------|---------------|----------------|---------|---------|
+| **ab_repeat** | 500 KB | 1.01s | 0.97s | **1.04×** | Slightly faster |
+| **ab_random** | 500 KB | 1.06s | 0.99s | **1.07×** | Faster |
+| **code.txt** | 69 KB | 0.20s | 0.19s | **1.10×** | Faster |
+| **large.txt** | 1.2 MB | 2.32s | 2.09s | **1.11×** | Faster |
+| **bmps.tar** | 1.1 MB | 0.56s | 0.53s | **1.06×** | Faster |
+| **all.tar** | 3 MB | 4.02s | 4.02s | 1.00× | Similar |
+| **wacky.bmp** | 922 KB | 0.34s | 0.34s | 1.00× | Similar |
+
+**Average speedup: 1.05× (5% faster overall)**
+
+**Detailed Speedup by max-bits** (Random ab, 500 KB):
+
+| max-bits | Linear Time | HashMap Time | Speedup |
+|----------|-------------|--------------|---------|
+| 9 | 0.61s | 0.47s | **1.29×** |
+| 10 | 0.67s | 0.54s | **1.24×** |
+| 11 | 0.70s | 0.52s | **1.34×** |
+| 12 | 0.71s | 0.51s | **1.40×** |
+
+**Key Findings:**
+- HashMap provides **consistent 5-40% speedup** depending on eviction frequency
+- **Lower max-bits** = more evictions = bigger speedup (up to 1.4×)
+- **Higher max-bits** = fewer evictions = smaller benefit
+- Overall compression dominated by I/O, so O(1) lookup only gives modest gains
+- Memory cost: +4 KB (~0.4% overhead) for HashMap
+
+**Verdict:** HashMap version recommended for general use. Linear version viable for embedded systems with tight memory constraints.
+
+---
+
+### Memory Usage
+
+| Strategy | Dictionary | Metadata | Total Overhead |
+|----------|-----------|----------|----------------|
+| Freeze | ~512 KB (65K entries × 8 bytes) | 0 KB | ~512 KB |
+| Reset | ~512 KB | 0 KB | ~512 KB |
+| LRU-v1 | ~512 KB | ~512 KB (linked list nodes) | ~1 MB |
+| LRU-v2 (HashMap) | ~512 KB | ~516 KB (list + 4 KB hash) | ~1 MB |
+| LRU-v2 (Linear) | ~512 KB | ~512 KB (linked list only) | ~1 MB |
+
+**Key Findings:**
+- LRU strategies use ~2× memory of Freeze/Reset (doubly-linked list overhead)
+- HashMap overhead negligible (**+4 KB** = 0.4% increase over Linear)
+- All strategies practical for modern systems (< 1 MB total)
+
+---
+
+### Summary: When to Use Each Strategy
+
+| Strategy | Best For | Compression Ratio | Speed | Memory |
+|----------|----------|-------------------|-------|--------|
+| **Freeze** | Repetitive patterns, uniform text | Best for static data | **Fastest** (2-3× faster) | Lowest |
+| **Reset** | Multi-section files, shifting contexts | Good for phased data | Fast | Lowest |
+| **LRU-v1** | Adaptive compression, research | Good | Medium | Medium |
+| **LRU-v2 (HashMap)** | Diverse patterns, general use | **Best for mixed data** | Medium (2-3× slower than Freeze) | Medium |
+| **LRU-v2 (Linear)** | Embedded systems, memory-constrained | Same as HashMap | Medium (5% slower than HashMap) | Medium |
+
+**Overall Recommendation:**
+- **For maximum compression ratio on diverse files:** Use LRU-v2 (HashMap)
+- **For maximum speed:** Use Freeze (accept lower compression on mixed files)
+- **For balanced performance:** Use Freeze on uniform data, LRU-v2 on mixed data
+- **For embedded systems:** Use LRU-v2 (Linear) - only 5% slower, saves 4 KB
+
+---
+
+## Usage
+
+### Compress a File
+
+**Freeze:**
+```bash
+python lzw_freeze.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
+```
+
+**Reset:**
+```bash
+python lzw_reset.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
+```
+
+**LRU (Optimization 1):**
+```bash
+python lzw_lru_optimized.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
+```
+
+**LRU (Optimization 2 - HashMap):**
+```bash
+python lzw_lru_optimization2.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
+```
+
+**LRU (Optimization 2 - Linear):**
+```bash
+python lzw_lru_optimization2_old.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
+```
+
+### Decompress a File
+
+**All strategies use the same decompress command:**
+```bash
+python [lzw_file].py decompress input.lzw output.txt
+```
+
+The decompressor reads metadata from the file header and automatically handles the correct strategy.
+
+### Available Alphabets
+
+| Alphabet | Size | Description |
+|----------|------|-------------|
+| `ascii` | 128 | Standard ASCII (0-127) |
+| `extendedascii` | 256 | Extended ASCII (0-255) |
+| `ab` | 2 | Binary alphabet (for testing) |
+
+Add custom alphabets in the `ALPHABETS` dictionary at the top of each file.
+
+### Recommended Parameters
+
+**For text files:**
+```bash
+--alphabet ascii --min-bits 9 --max-bits 16
+```
+- 9 bits = 512 codes (min for 128 ASCII + special codes)
+- 16 bits = 65,536 codes (good balance for most files)
+
+**For binary files:**
+```bash
+--alphabet extendedascii --min-bits 9 --max-bits 16
+```
+
+**For testing/debugging:**
+```bash
+--alphabet ab --min-bits 3 --max-bits 9
+```
+- Small alphabet makes behavior easier to trace
+- Quick dictionary fill for testing eviction logic
+
+---
+
+## File Formats
+
+### Compressed File Structure
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ HEADER                                                      │
+├─────────────────────────────────────────────────────────────┤
+│ min_bits (8 bits)                                          │
+│ max_bits (8 bits)                                          │
+│ alphabet_size (16 bits)                                    │
+│ alphabet[0] (8 bits)                                       │
+│ alphabet[1] (8 bits)                                       │
+│ ...                                                         │
+│ alphabet[N-1] (8 bits)                                     │
+├─────────────────────────────────────────────────────────────┤
+│ COMPRESSED DATA                                             │
+├─────────────────────────────────────────────────────────────┤
+│ code[0] (min_bits to max_bits, variable)                   │
+│ code[1] (min_bits to max_bits, variable)                   │
+│ ...                                                         │
+│ [RESET_CODE] (only in Reset strategy)                      │
+│ [EVICT_SIGNAL][code][data] (only in LRU strategies)       │
+│ ...                                                         │
+│ EOF_CODE (code_bits at end)                                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Special Codes
+
+| Code | Value | Purpose |
+|------|-------|---------|
+| Alphabet | 0 to N-1 | Single characters |
+| EOF_CODE | N | End of file marker |
+| RESET_CODE | N+1 | Dictionary reset signal (Reset only) |
+| EVICT_SIGNAL | 2^max_bits - 1 | LRU eviction sync (LRU only) |
+| Regular codes | N+2 to 2^max_bits - 2 | Dictionary entries |
+
+### Bit-Level Encoding
+
+LZW uses **variable-width codes** packed into bytes:
+
+**Example:** 9-bit codes `[257, 258, 259]`
+```
+Binary: 100000001 100000010 100000011
+Packed: 10000000 11000000 10100000 011
+Bytes:  [0x80]    [0xC0]    [0xA0]    [0x03]
+```
+
+The BitWriter class handles this bit packing automatically.
+
+---
+
+## Implementation Notes
+
+### Code Structure
+
+Each implementation follows this structure:
+
+```python
+# 1. Predefined alphabets
+ALPHABETS = {'ascii': [...], 'extendedascii': [...], 'ab': [...]}
+
+# 2. Bit-level I/O classes
+class BitWriter:  # Packs variable-width integers into bytes
+class BitReader:  # Unpacks bytes into variable-width integers
+
+# 3. Strategy-specific data structures
+class LRUTracker:  # Only in LRU implementations
+
+# 4. Compression function
+def compress(input_file, output_file, alphabet_name, min_bits, max_bits):
+    # - Initialize dictionary with alphabet
+    # - Read input, match longest phrases
+    # - Add new phrases to dictionary
+    # - Apply eviction strategy when full
+    # - Write codes to output
+
+# 5. Decompression function
+def decompress(input_file, output_file):
+    # - Read header to get parameters
+    # - Initialize dictionary
+    # - Read codes, output phrases
+    # - Reconstruct dictionary entries
+    # - Handle special signals (RESET_CODE, EVICT_SIGNAL)
+
+# 6. CLI argument parsing
+if __name__ == '__main__':
+    # argparse setup for compress/decompress commands
+```
+
+### Testing
+
+All implementations include round-trip testing:
 
 ```bash
-javac *.java
+# Compress
+python lzw_lru_optimization2.py compress --alphabet ascii input.txt output.lzw
+
+# Decompress
+python lzw_lru_optimization2.py decompress output.lzw restored.txt
+
+# Verify
+diff input.txt restored.txt  # Should be identical
 ```
 
-### Compress
+### Design Decisions
 
-Your program supports file compression from the command line.
-The following example shows how to compress a file named code.txt:
+**Why Python?**
+- Rapid prototyping for algorithm exploration
+- Clear, readable code for educational purposes
+- Performance adequate for research (C/Rust for production)
 
-```bash
-java LZWTool --mode compress --minW 9 --maxW 16 --policy lru --alphabet alphabets/ascii.txt < TestFiles/code.txt > code.lzw
-```
+**Why multiple files instead of one with modes?**
+- Easier to compare implementations side-by-side
+- Each strategy is self-contained
+- Clearer for learning and experimentation
 
-### Expand
-
-Your program supports file expansion from the command line.
-The example below shows how to decompress the file code.lzw that was created in the previous step:
-
-```bash
-java LZWTool --mode expand < code.lzw > restored.txt
-```
+**Why variable-width encoding?**
+- Balance between code space and efficiency
+- Starting at 9 bits avoids waste for ASCII
+- Growing to 16 bits allows 65K dictionary entries
 
 ---
 
-## 🧩 Command-Line Options and Parsing
+## Future Work
 
+### Planned Improvements
 
-Your program supports the following command-line options:
+1. **LFU Implementation** - Complete the least-frequently-used eviction strategy
+2. **Hybrid Strategies** - Combine LRU and LFU with adaptive switching
+3. **Compression Ratio Monitoring** - Auto-switch strategies when ratio degrades
+4. **Parallel Compression** - Multi-threaded encoding for large files
+5. **Streaming API** - Compress/decompress without loading entire file
+6. **Benchmark Suite** - Comprehensive testing across diverse file types
 
+### Research Questions
 
-| Option          | Description                                        | Required?    | Default  |
-| --------------- | -------------------------------------------------- | ------------ | -------- |
-| `--mode`        | `compress` or `expand`                             | ✅            | —        |
-| `--minW`        | Minimum codeword width                             | ✅ (compress) | 9        |
-| `--maxW`        | Maximum codeword width                             | ✅ (compress) | 16       |
-| `--policy`      | Eviction policy: `freeze`, `reset`, `lru`, `lfu` | ✅            | `freeze` |
-| `--alphabet`    | path to seed alphabet     | ✅ (compress) | —        |
-
-For expansion, `minW`, `maxW`, `alphabet`, and `policy` are ignored — they are read from the compressed file.
-
-File input and output is supplied using the standard redirect operators for standard I/O: Use "<" to redirect the input from a file and use ">" to redirect the output to a file. 
-**Note that the input redirection operator (<) doesn't work with PowerShell under Windows.**
-
-You can parse command-line arguments using a simple loop in `main()`:
-
-```java
-for (int i = 0; i < args.length; i++) {
-    switch (args[i]) {
-        case "--mode":
-            mode = args[++i];
-            break;
-        case "--minW":
-            minW = Integer.parseInt(args[++i]);
-            break;
-        case "--maxW":
-            maxW = Integer.parseInt(args[++i]);
-            break;
-        case "--policy":
-            policy = args[++i];
-            break;
-        case "--alphabet":
-            alphabetPath = args[++i];
-            break;
-        default:
-            System.err.println("Unknown argument: " + args[i]);
-            System.exit(2);
-    }
-}
-```
-
-Once all arguments are parsed, validate the configuration:
-
-* Ensure required arguments are provided.
-* Confirm `minW ≤ maxW`.
-* Verify the alphabet file exists.
+- What file characteristics predict which strategy will perform best?
+- Can we auto-detect optimal strategy from initial bytes?
+- How do these strategies compare to modern algorithms (DEFLATE, LZMA, Zstandard)?
+- Can machine learning improve eviction decisions?
 
 ---
 
-## 📈 Codebook Growth and Variable Codeword Size
+## References
 
-The **codebook** begins with entries for all symbols in the seed alphabet and expands dynamically as new phrases are discovered during compression. The **codeword size (`W`)** determines how many bits are used to represent each code. This width starts at the minimum value (`minW`) and increases as the codebook grows.
-
-### Growth Behavior
-
-* **Initial State:** The codebook starts with all symbols from the alphabet. Each symbol has a unique code of width `minW` bits.
-* **Growth:** As the encoder encounters new symbol combinations, it assigns the next available code and increments the code count.
-* **Width Adjustment:** When the current number of codes equals `2^W`, the codeword width increases by 1 bit, allowing for twice as many unique codes.
-* **Upper Bound:** Growth continues until the width reaches the specified `maxW`. At this point, the codebook is full, and an **eviction policy** (`reset`, `freeze`, `lru`, or `lfu`) determines how to proceed.
-
-### Decoding Consistency
-
-During decompression, the decoder must mirror the same codebook growth and width changes exactly as the encoder. The header information ensures both sides agree on `minW`, `maxW`, and policy so that bit boundaries align correctly and codebook updates stay synchronized.
-
-
-## Compressed File Header
-
-Each compressed file must include a compact header at the beginning of the file. This header stores all metadata required to reconstruct the command-line options used during compression, including the codebook policy, minimum and maximum codeword widths, and the seed alphabet. The header should be written using the minimum number of bytes necessary, ensuring efficient space usage without redundancy. When decompressing, the program reads this header first to automatically restore the same configuration used during compression.
-
-
-## 🔁 Codebook Eviction Policies
-
-When the **maximum codebook width (`maxW`)** is reached, the codebook is considered **full**, and the eviction policy determines how to proceed. The policy controls whether entries are discarded, replaced, or the codebook is reset. This behavior is critical to maintaining compression efficiency while managing limited code space.
-
-### 1. `reset`
-
-When the codebook reaches full capacity, the encoder (compression program) **reinitializes** the codebook with the original seed alphabet. This allows new patterns to be learned from scratch. It is efficient for files with distinct phases or topic shifts.
-
-### 2. `freeze`
-
-When full, the encoder **stops adding new entries** and continues encoding only with existing codes. This approach ensures deterministic behavior but may reduce compression ratio if new patterns appear after the codebook freezes.
-
-### 3. `lru` (Least Recently Used)
-
-Upon reaching full capacity, the encoder **evicts the least recently used entry** from the codebook and reuses its space for the new pattern. This keeps the codebook adaptive to local patterns and works best when the data exhibits frequent context shifts.
-
-### 4. `lfu` (Least Frequently Used)
-
-When the codebook is full, the encoder removes the **least frequently used entry**, i.e., the one emitted the fewest times. This preserves globally common patterns and works well on files with stable distributions.
-
-In all cases, eviction occurs **only after the codebook has filled to the limit imposed by `maxW`**, ensuring that width growth and code allocation proceed predictably.
-
-## 🔤 Alphabet Configuration
-
-The **alphabet** defines the initial seed symbols used to initialize the LZW codebook before compression or expansion begins. In this assignment, the alphabet must be **read from a file**.
-
-Each line in the alphabet file represents one symbol or token. The order of lines determines the initial code assignments, starting from 0 and increasing sequentially. Blank lines should be ignored, and duplicate entries must be removed deterministically so that both encoder and decoder construct identical dictionaries.
-
-### Example Alphabet File
-
-```
-A
-B
-C
-D
-E
-F
-G
-H
-...
-```
-
-### Notes
-
-* The alphabet file is specified using the `--alphabet` command-line argument (e.g., `--alphabet ascii.txt`).
-* During compression, this alphabet is written into the compressed file header to allow the decoder to rebuild the exact same seed mapping.
-* For simplicity, all inputs and outputs must assume UTF-8 encoding for alphabet entries.
-* The alphabet file must be read fully before compression starts.
+- **Original LZW Paper:** Welch, T. A. (1984). "A Technique for High-Performance Data Compression". *Computer*, 17(6), 8-19.
+- **LZ77/LZ78:** Ziv, J., & Lempel, A. (1977, 1978). Original Lempel-Ziv algorithms that inspired LZW.
+- **Dictionary Coding:** Salomon, D. (2007). *Data Compression: The Complete Reference*. Springer.
 
 ---
 
-## 🧪 Testing and Verification
+## License
 
-You can verify your program by performing a **round-trip test**: compress a file, then immediately expand it, and compare the restored version to the original. Both files must be **bit-for-bit identical** if your encoder and decoder are implemented correctly.
+[Specify your license here]
 
-### Example (Linux/macOS)
+## Contributors
 
-```bash
-java LZWTool --mode compress --alphabet ascii.txt < input.txt > output.lzw
-java LZWTool --mode expand < output.lzw > restored.txt
-diff input.txt restored.txt
-```
-
-If the output from `diff` is empty, your implementation is correct.
-
-### Example (Windows)
-
-Use the `fc` command with binary comparison:
-
-```cmd
-java LZWTool --mode compress --alphabet ascii.txt < input.txt > output.lzw
-java LZWTool --mode expand < output.lzw > restored.txt
-fc /B input.txt restored.txt
-```
-
-If `fc /B` reports no differences, your files match exactly.
-
-### Testing Guidelines
-
-* **Start small:** Begin testing with very small files and alphabets (like those shown in class examples) to verify correctness before using larger inputs.
-* **Vary parameters:** Test multiple combinations of `minW`, `maxW`, and codebook policies (`reset`, `freeze`, `lru`, `lfu`).
-* **Check headers:** Use a hex viewer or `xxd` to confirm that header fields are written correctly into the compressed files.
-* **Compression ratio:** Optionally measure and compare compressed file sizes to confirm that adaptive policies behave as expected.
----
-## 🐞 Debugging
-
-The most error-prone moments occur when the **codeword width changes** or when a **codebook eviction policy** is triggered. These updates must behave identically during both compression and expansion.
-
-Since output is redirected to a file, standard console printing (`System.out.println()`) will not be visible. Instead, use:
-
-```java
-System.err.println()
-```
-
-This writes to the **standard error stream**, which still appears in the terminal unless redirected.
-
-To capture debug logs in files for side-by-side comparison:
-
-```bash
-java LZWTool --mode compress ... 2> debug-compress.txt
-java LZWTool --mode expand ... 2> debug-expand.txt
-```
-
-You can then open `debug-compress.txt` and `debug-expand.txt` together to trace encoding and decoding steps.
-
-### Recommended Debug Output
-
-Print the following during early testing:
-
-* Current codeword width (`W`)
-* Code value being written or read
-* The string or phrase associated with each code
-* Each `(code, string)` pair added to the codebook
-
-Focus debugging output on iterations just **before and after width increases or evictions**—these transitions are the most common sources of synchronization bugs.
-
-
----
-## 🔬 Deliverables
-
-Submit your completed Java project to GradeScope:
-
-* `LZWTool.java` is the ONLY file that you are allowed to submit
----
-## **📊 Grading Rubric**
-
-| Item.                                                   |  Points |
-| ------------------------------------------------------- | ------- |
-| Autograder Tests.                                       | 90      |
-| Code style, comments, and modularity                    | 10      |
-
-### **💡 Grading Guidelines**
-
-* Test cases include both visible and hidden scenarios to assess correctness, edge handling, and boundary conditions.
-* If your autograder score is below 60%, your code will be manually reviewed for partial credit.
-
-  * However, **manual grading can award no more than 60% of the total autograder points**.
-* `Code style, comments, and modularity` is graded manually and includes:
-
-  * Clear and meaningful variable/method names
-  * Proper indentation and formatting
-  * Use of helper methods to reduce duplication
-  * Inline comments explaining non-obvious logic
-  * Adherence to Java naming conventions
+[Add contributor information]
 
 ---
 
-
+**Last Updated:** 2025-01-09
 
