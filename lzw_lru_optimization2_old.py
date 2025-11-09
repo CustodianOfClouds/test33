@@ -34,12 +34,6 @@ ALPHABETS = {
 }
 
 # Global debug flag
-DEBUG = False
-
-def debug_print(*args, **kwargs):
-    """Print debug messages if DEBUG is enabled."""
-    if DEBUG:
-        print(*args, **kwargs, file=sys.stderr)
 
 # ============================================================================
 # BIT-LEVEL I/O CLASSES
@@ -215,16 +209,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     OUTPUT_HISTORY_SIZE = 255
     output_history = []           # Circular buffer of recent outputs
 
-    debug_print("\n" + "="*80)
-    debug_print("OPTIMIZATION 2 ENCODER START")
-    debug_print("="*80)
-    debug_print(f"Strategy: Reference output history with offset + suffix!")
-    debug_print("="*80 + "\n")
 
-    signal_count = 0
-    eviction_count = 0
-    output_count = 0
-    fallback_count = 0  # Times we couldn't find prefix in history
 
     # Read and compress
     with open(input_file, 'rb') as f:
@@ -233,7 +218,6 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
         if not first_byte:
             writer.write(EOF_CODE, min_bits)
             writer.close()
-            debug_print("Empty file - wrote EOF")
             return
 
         first_char = chr(first_byte[0])
@@ -264,8 +248,6 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                 # OPTIMIZATION: Check if this code was evicted and now has a new value
                 if output_code in evicted_codes:
                     # Encoder is about to use a code that was evicted!
-                    debug_print(f"[ENC] *** EVICT-THEN-USE DETECTED! ***")
-                    debug_print(f"[ENC] Code {output_code} was evicted, now being used")
 
                     # OPTIMIZATION 2: Output History + Offset format:
                     # [EVICT_SIGNAL][code][offset][suffix][code_again]
@@ -288,21 +270,14 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
                     if offset is not None and offset <= 255:
                         # Found in history! Send compact format
-                        debug_print(f"[ENC] Entry='{entry}', prefix='{prefix}' found at offset={offset}, suffix='{suffix}'")
-                        debug_print(f"[ENC] Sending offset-based EVICT_SIGNAL")
 
                         writer.write(EVICT_SIGNAL, code_bits)
                         writer.write(output_code, code_bits)
                         writer.write(offset, 8)  # 1 byte offset
                         writer.write(ord(suffix), 8)  # 1 byte suffix
 
-                        signal_count += 1
-                        debug_print(f"[ENC] Signal sent: code={output_code}, offset={offset}, suffix='{suffix}'")
                     else:
                         # Fallback: send full entry (prefix not in recent history)
-                        fallback_count += 1
-                        debug_print(f"[ENC] Prefix not found in history, using fallback (full entry)")
-                        debug_print(f"[ENC] Sending full entry: '{entry}'")
 
                         writer.write(EVICT_SIGNAL, code_bits)
                         writer.write(output_code, code_bits)
@@ -311,15 +286,12 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                         for c in entry:
                             writer.write(ord(c), 8)
 
-                        signal_count += 1
 
                     # Remove from evicted_codes since we've now synced it
                     del evicted_codes[output_code]
 
                 # Output code for current phrase
                 writer.write(output_code, code_bits)  # Code sent again (data)
-                output_count += 1
-                debug_print(f"[ENC #{output_count}] OUTPUT code={output_code} for '{current}' ({code_bits} bits)")
 
                 # OPTIMIZATION 2 (OLD): Add to output history (linear search version)
                 output_history.append(current)
@@ -337,22 +309,17 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                     if next_code >= threshold and code_bits < max_bits:
                         code_bits += 1
                         threshold <<= 1
-                        debug_print(f"[ENC] Increased bit width to {code_bits} bits")
 
                     # Add new phrase
                     dictionary[combined] = next_code
                     lru_tracker.use(combined)
-                    debug_print(f"[ENC] ADDED code={next_code} -> '{combined}'")
                     next_code += 1
                 else:
                     # Dictionary FULL - evict LRU
                     lru_entry = lru_tracker.find_lru()
                     if lru_entry is not None:
                         lru_code = dictionary[lru_entry]
-                        eviction_count += 1
 
-                        debug_print(f"[ENC] EVICTING code={lru_code} -> '{lru_entry}' (LRU)")
-                        debug_print(f"[ENC] ADDING code={lru_code} -> '{combined}' (reusing code)")
 
                         # Remove old entry
                         del dictionary[lru_entry]
@@ -366,7 +333,6 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                         # Store both the full entry and the prefix (current phrase being output)
                         evicted_codes[lru_code] = (combined, current)
 
-                        debug_print(f"[ENC] Tracking evicted code={lru_code}: entry='{combined}', prefix='{current}'")
 
                 current = char
 
@@ -375,7 +341,6 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
     # Check if final code was evicted
     if final_code in evicted_codes:
-        debug_print(f"[ENC] *** EVICT-THEN-USE on final phrase! ***")
 
         entry, prefix = evicted_codes[final_code]
         suffix = entry[len(prefix):]
@@ -392,7 +357,6 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
             writer.write(final_code, code_bits)
             writer.write(offset, 8)
             writer.write(ord(suffix), 8)
-            signal_count += 1
         else:
             writer.write(EVICT_SIGNAL, code_bits)
             writer.write(final_code, code_bits)
@@ -400,14 +364,10 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
             writer.write(len(entry), 16)
             for c in entry:
                 writer.write(ord(c), 8)
-            signal_count += 1
-            fallback_count += 1
 
         del evicted_codes[final_code]
 
     writer.write(final_code, code_bits)
-    output_count += 1
-    debug_print(f"[ENC #{output_count}] OUTPUT code={final_code} for '{current}' (final)")
 
     # Add final output to history (linear search version)
     output_history.append(current)
@@ -418,22 +378,10 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # Check if decoder will increment bit width before reading EOF
     if next_code >= threshold and code_bits < max_bits:
         code_bits += 1
-        debug_print(f"[ENC] Increased bit width to {code_bits} bits before EOF")
 
     writer.write(EOF_CODE, code_bits)
-    debug_print(f"[ENC] Wrote EOF code={EOF_CODE}")
     writer.close()
 
-    debug_print("\n" + "="*80)
-    debug_print("OPTIMIZATION 2 ENCODER COMPLETE")
-    debug_print("="*80)
-    debug_print(f"Total outputs: {output_count}")
-    debug_print(f"Total evictions: {eviction_count}")
-    debug_print(f"Signals sent: {signal_count}")
-    debug_print(f"Offset-based signals: {signal_count - fallback_count}")
-    debug_print(f"Fallback (full entry): {fallback_count}")
-    debug_print(f"Optimization: {signal_count}/{eviction_count} = {signal_count/eviction_count*100:.1f}% of evictions signaled" if eviction_count > 0 else "No evictions")
-    debug_print("="*80 + "\n")
 
     print(f"Compressed: {input_file} -> {output_file}")
 
@@ -477,16 +425,7 @@ def decompress(input_file, output_file):
     OUTPUT_HISTORY_SIZE = 255
     output_history = []
 
-    debug_print("\n" + "="*80)
-    debug_print("OPTIMIZATION 2 DECODER START")
-    debug_print("="*80)
-    debug_print(f"Strategy: Look up prefix in output history using offset")
-    debug_print("="*80 + "\n")
 
-    signal_count = 0
-    eviction_count = 0
-    input_count = 0
-    fallback_count = 0
 
     # Flag to skip dictionary addition after EVICT_SIGNAL
     skip_next_addition = False
@@ -500,16 +439,11 @@ def decompress(input_file, output_file):
     if codeword == EOF_CODE:
         reader.close()
         open(output_file, 'wb').close()
-        debug_print("Empty file - got EOF")
         return
 
     # Decode first codeword
-    if codeword not in dictionary:
-        raise ValueError(f"Invalid first codeword: {codeword}")
 
     prev = dictionary[codeword]
-    input_count += 1
-    debug_print(f"[DEC #{input_count}] READ code={codeword} -> '{prev}'")
 
     with open(output_file, 'wb') as out:
         out.write(prev.encode('latin-1'))
@@ -522,7 +456,6 @@ def decompress(input_file, output_file):
             if next_code >= threshold and code_bits < max_bits:
                 code_bits += 1
                 threshold <<= 1
-                debug_print(f"[DEC] Increased bit width to {code_bits} bits")
 
             # Read next codeword
             codeword = reader.read(code_bits)
@@ -531,18 +464,15 @@ def decompress(input_file, output_file):
                 raise ValueError("Corrupted file: unexpected end of file")
 
             if codeword == EOF_CODE:
-                debug_print(f"[DEC] READ EOF")
                 break
 
             # Check for EVICT_SIGNAL
             if codeword == EVICT_SIGNAL:
                 # Encoder evicted and is using the code immediately
-                debug_print(f"[DEC] *** EVICT_SIGNAL received ***")
 
                 evicted_code = reader.read(code_bits)
                 offset = reader.read(8)
 
-                signal_count += 1
 
                 if offset > 0:
                     # OPTIMIZATION 2: Use output history + suffix
@@ -556,14 +486,11 @@ def decompress(input_file, output_file):
                     prefix = output_history[-offset]
                     new_entry = prefix + suffix
 
-                    debug_print(f"[DEC] Offset={offset}, prefix='{prefix}' (from history) + suffix='{suffix}' = '{new_entry}'")
                 else:
                     # Fallback: full entry provided
-                    fallback_count += 1
                     entry_length = reader.read(16)
                     new_entry = ''.join(chr(reader.read(8)) for _ in range(entry_length))
 
-                    debug_print(f"[DEC] Fallback mode: full entry='{new_entry}'")
 
                 # Remove old entry from LRU tracker (if tracked)
                 if evicted_code in dictionary and evicted_code >= alphabet_size + 1:
@@ -573,7 +500,6 @@ def decompress(input_file, output_file):
                 dictionary[evicted_code] = new_entry
                 lru_tracker.use(evicted_code)
 
-                debug_print(f"[DEC] Dictionary updated: [{evicted_code}] = '{new_entry}'")
 
                 # Set flag to skip dictionary addition on next iteration
                 skip_next_addition = True
@@ -581,18 +507,14 @@ def decompress(input_file, output_file):
                 # Don't output anything, don't update prev, continue to next code
                 continue
 
-            input_count += 1
 
             # Decode codeword
             if codeword in dictionary:
                 current = dictionary[codeword]
-                debug_print(f"[DEC #{input_count}] READ code={codeword} -> '{current}'")
             elif codeword == next_code:
                 # Special LZW case
                 current = prev + prev[0]
-                debug_print(f"[DEC #{input_count}] READ code={codeword} -> '{current}' (special case)")
             else:
-                debug_print(f"\n[DEC] *** ERROR: Invalid codeword {codeword} ***")
                 raise ValueError(f"Invalid codeword: {codeword}")
 
             # Write decoded string
@@ -611,7 +533,6 @@ def decompress(input_file, output_file):
                     # Dictionary not full yet - add normally
                     dictionary[next_code] = new_entry
                     lru_tracker.use(next_code)
-                    debug_print(f"[DEC] ADDED code={next_code} -> '{new_entry}'")
                     next_code += 1
                 else:
                     # Dictionary FULL - mirror encoder's LRU eviction
@@ -619,9 +540,6 @@ def decompress(input_file, output_file):
                     if lru_code is not None:
                         lru_entry = dictionary[lru_code]
 
-                        eviction_count += 1
-                        debug_print(f"[DEC] EVICTING code={lru_code} -> '{lru_entry}' (LRU)")
-                        debug_print(f"[DEC] ADDING code={lru_code} -> '{new_entry}' (mirroring encoder)")
 
                         # Remove old entry
                         del dictionary[lru_code]
@@ -631,7 +549,7 @@ def decompress(input_file, output_file):
                         dictionary[lru_code] = new_entry
                         lru_tracker.use(lru_code)
             else:
-                debug_print(f"[DEC] SKIPPING dictionary addition (just received EVICT_SIGNAL)")
+                pass  # Decoder skips addition after receiving EVICT_SIGNAL
 
             # Reset flag after processing
             skip_next_addition = False
@@ -645,15 +563,6 @@ def decompress(input_file, output_file):
 
     reader.close()
 
-    debug_print("\n" + "="*80)
-    debug_print("OPTIMIZATION 2 DECODER COMPLETE")
-    debug_print("="*80)
-    debug_print(f"Total inputs: {input_count}")
-    debug_print(f"Total evictions: {eviction_count}")
-    debug_print(f"Signals received: {signal_count}")
-    debug_print(f"Offset-based signals: {signal_count - fallback_count}")
-    debug_print(f"Fallback (full entry): {fallback_count}")
-    debug_print("="*80 + "\n")
 
     print(f"Decompressed: {input_file} -> {output_file}")
 
@@ -663,7 +572,6 @@ def decompress(input_file, output_file):
 
 def main():
     """Parse command-line arguments and run compression or decompression."""
-    global DEBUG
 
     parser = argparse.ArgumentParser(description='LZW compression (optimization 2: minimal EVICT_SIGNAL)')
     sub = parser.add_subparsers(dest='mode', required=True)
@@ -675,19 +583,13 @@ def main():
     c.add_argument('--alphabet', required=True, choices=list(ALPHABETS.keys()))
     c.add_argument('--min-bits', type=int, default=9)
     c.add_argument('--max-bits', type=int, default=16)
-    c.add_argument('--debug', action='store_true', help='Enable debug output')
 
     # Decompress subcommand
     d = sub.add_parser('decompress')
     d.add_argument('input')
     d.add_argument('output')
-    d.add_argument('--debug', action='store_true', help='Enable debug output')
 
     args = parser.parse_args()
-
-    # Set global debug flag
-    if hasattr(args, 'debug') and args.debug:
-        DEBUG = True
 
     try:
         if args.mode == 'compress':
@@ -697,8 +599,6 @@ def main():
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         import traceback
-        if DEBUG:
-            traceback.print_exc()
         sys.exit(1)
 
 if __name__ == '__main__':
