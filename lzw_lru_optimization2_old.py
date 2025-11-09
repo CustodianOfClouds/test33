@@ -192,76 +192,74 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # LRU tracker for dictionary entries (NOT alphabet entries)
     lru_tracker = LRUTracker()
 
-    # Track ALL evicted codes and their new values (since dict became full)
+    # Track evicted codes and their new values
     # evicted_codes[code] = (full_entry, prefix_at_eviction_time)
     evicted_codes = {}
 
-    # OPTIMIZATION 2 (OLD VERSION): Maintain circular buffer with LINEAR SEARCH
-    # Max 255 entries (8-bit offset), stores recent output strings
-    #
-    # This is the O(255 × L) version - linear search through output history
-    # Used for benchmarking comparison with O(1) HashMap version
-    #
-    # PERFORMANCE:
-    #   Complexity: O(255 × L) per EVICT_SIGNAL where L = avg string length
-    #   For 1MB file: ~5000 EVICT_SIGNALs × 255 comparisons × 15 chars = ~19M operations
-    #
-    # Memory: Minimal overhead (only the 255-entry circular buffer, no HashMap)
+    # OPTIMIZATION 2 (OLD): Output history with O(255*L) linear search
+    # Circular buffer of last 255 outputs (8-bit offset limit)
+    # Uses linear search O(255*L) instead of HashMap O(1)
+    # Minimal memory overhead vs 4KB for HashMap version
     OUTPUT_HISTORY_SIZE = 255
     output_history = []           # Circular buffer of recent outputs
 
 
 
-    # Read and compress
+    # Read and compress file byte by byte (streaming for memory efficiency)
     with open(input_file, 'rb') as f:
+        # Read first byte
         first_byte = f.read(1)
 
+        # Empty file
         if not first_byte:
             writer.write(EOF_CODE, min_bits)
             writer.close()
             return
 
+        # Convert byte to character for dictionary matching
         first_char = chr(first_byte[0])
+
+        # Validate first character is in alphabet
         if first_char not in valid_chars:
             raise ValueError(f"Byte value {first_byte[0]} at position 0 not in alphabet")
 
-        current = first_char
-        pos = 1
+        current = first_char  # Current phrase being matched
+        pos = 1  # Track position for better error messages
 
+        # Main LZW compression loop
         while True:
-            byte_data = f.read(1)
-            if not byte_data:
+            byte_data = f.read(1)  # Read next byte
+            if not byte_data:          # End of input
                 break
 
+            # Convert byte to character
             char = chr(byte_data[0])
+
+            # Validate character
             if char not in valid_chars:
                 raise ValueError(f"Byte value {byte_data[0]} at position {pos} not in alphabet")
             pos += 1
 
-            combined = current + char
+            combined = current + char  # Try extending current phrase
 
             if combined in dictionary:
+                # Phrase exists in dictionary - keep extending
                 current = combined
             else:
-                # About to output code for current phrase
+                # Phrase not in dictionary - output code and add new entry
                 output_code = dictionary[current]
 
-                # OPTIMIZATION: Check if this code was evicted and now has a new value
+                # OPTIMIZATION 2 (OLD): Check if this code was evicted and is being reused
                 if output_code in evicted_codes:
-                    # Encoder is about to use a code that was evicted!
-
-                    # OPTIMIZATION 2: Output History + Offset format:
-                    # [EVICT_SIGNAL][code][offset][suffix][code_again]
-                    #
                     # Unpack stored entry and prefix
                     entry, prefix = evicted_codes[output_code]
 
-                    # Compute suffix: the character that extends prefix to entry
+                    # Compute suffix (character that extends prefix to entry)
                     suffix = entry[len(prefix):]
                     if len(suffix) != 1:
-                        raise ValueError(f"Logic error: suffix should be 1 char, got {len(suffix)} (entry='{entry}', prefix='{prefix}')")
+                        raise ValueError(f"Logic error: suffix should be 1 char, got {len(suffix)}")
 
-                    # LINEAR SEARCH (O(255 × L)) through output history
+                    # LINEAR SEARCH (O(255*L)) through output history
                     # Search backwards for most recent occurrence of prefix
                     offset = None
                     for i in range(len(output_history) - 1, -1, -1):
@@ -270,71 +268,68 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                             break
 
                     if offset is not None and offset <= 255:
-                        # Found in history! Send compact format
-
+                        # Send compact EVICT_SIGNAL: [EVICT_SIGNAL][code][offset][suffix]
                         writer.write(EVICT_SIGNAL, code_bits)
                         writer.write(output_code, code_bits)
-                        writer.write(offset, 8)  # 1 byte offset
+                        writer.write(offset, 8)       # 1 byte offset
                         writer.write(ord(suffix), 8)  # 1 byte suffix
-
                     else:
                         # Fallback: send full entry (prefix not in recent history)
-
+                        # Format: [EVICT_SIGNAL][code][0][entry_length][char1]...[charN]
                         writer.write(EVICT_SIGNAL, code_bits)
                         writer.write(output_code, code_bits)
-                        writer.write(0, 8)  # offset=0 signals "full entry follows"
+                        writer.write(0, 8)            # offset=0 signals "full entry follows"
                         writer.write(len(entry), 16)
                         for c in entry:
                             writer.write(ord(c), 8)
 
-
-                    # Remove from evicted_codes since we've now synced it
+                    # Remove from evicted_codes - decoder is now synchronized
                     del evicted_codes[output_code]
 
                 # Output code for current phrase
-                writer.write(output_code, code_bits)  # Code sent again (data)
+                writer.write(output_code, code_bits)
 
-                # OPTIMIZATION 2 (OLD): Add to output history (linear search version)
+                # Add current output to history
                 output_history.append(current)
-
                 if len(output_history) > OUTPUT_HISTORY_SIZE:
                     output_history.pop(0)  # Remove oldest from buffer
 
-                # Update LRU if current phrase is tracked
+                # Update LRU for current phrase (if it's a dictionary entry, not alphabet)
                 if lru_tracker.contains(current):
                     lru_tracker.use(current)
 
-                # Add new entry to dictionary
+                # Add new entry to dictionary (or evict LRU if full)
                 if next_code < EVICT_SIGNAL:
+                    # Dictionary not full yet - add normally
+
                     # Check if we need to increase bit width
                     if next_code >= threshold and code_bits < max_bits:
                         code_bits += 1
                         threshold <<= 1
 
-                    # Add new phrase
+                    # Add new phrase to dictionary
                     dictionary[combined] = next_code
                     lru_tracker.use(combined)
                     next_code += 1
                 else:
-                    # Dictionary FULL - evict LRU
+                    # Dictionary FULL - evict LRU entry and reuse its code
                     lru_entry = lru_tracker.find_lru()
                     if lru_entry is not None:
                         lru_code = dictionary[lru_entry]
 
-
-                        # Remove old entry
+                        # Remove old entry from dictionary and LRU tracker
                         del dictionary[lru_entry]
                         lru_tracker.remove(lru_entry)
 
-                        # Add new entry at evicted position
+                        # Add new entry at evicted code position
                         dictionary[combined] = lru_code
                         lru_tracker.use(combined)
 
-                        # Track this eviction in case code is used later
-                        # Store both the full entry and the prefix (current phrase being output)
+                        # Track eviction with both full entry and prefix
+                        # Prefix is needed to compute offset+suffix encoding
                         evicted_codes[lru_code] = (combined, current)
 
-
+                # Start new phrase with current character
                 current = char
 
     # Write final phrase
@@ -342,7 +337,6 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
     # Check if final code was evicted
     if final_code in evicted_codes:
-
         entry, prefix = evicted_codes[final_code]
         suffix = entry[len(prefix):]
 
@@ -354,11 +348,13 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                 break
 
         if offset is not None and offset <= 255:
+            # Send compact EVICT_SIGNAL
             writer.write(EVICT_SIGNAL, code_bits)
             writer.write(final_code, code_bits)
             writer.write(offset, 8)
             writer.write(ord(suffix), 8)
         else:
+            # Fallback: send full entry
             writer.write(EVICT_SIGNAL, code_bits)
             writer.write(final_code, code_bits)
             writer.write(0, 8)
@@ -370,19 +366,21 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
     writer.write(final_code, code_bits)
 
-    # Add final output to history (linear search version)
+    # Add final output to history
     output_history.append(current)
 
+    # Update LRU for final phrase
     if lru_tracker.contains(current):
         lru_tracker.use(current)
 
     # Check if decoder will increment bit width before reading EOF
+    # Decoder increments after reading final phrase, so EOF needs correct bit width
     if next_code >= threshold and code_bits < max_bits:
         code_bits += 1
 
+    # Write EOF marker
     writer.write(EOF_CODE, code_bits)
     writer.close()
-
 
     print(f"Compressed: {input_file} -> {output_file}")
 
@@ -392,43 +390,45 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
 
 def decompress(input_file, output_file):
     """
-    Decompress a file using OPTIMIZATION 2.
+    Decompress a file using OPTIMIZATION 2 (OLD - linear search version).
 
-    EVICT_SIGNAL no longer contains entry - decoder reconstructs using prev + prev[0]!
+    Uses output history to reconstruct entries from offset+suffix encoding.
     """
     reader = BitReader(input_file)
 
-    # Read header
+    # Read file header
     min_bits = reader.read(8)
     max_bits = reader.read(8)
     alphabet_size = reader.read(16)
     alphabet = [chr(reader.read(8)) for _ in range(alphabet_size)]
 
-    # Initialize dictionary
+    # Initialize dictionary with alphabet
+    # Example: {0: 'a', 1: 'b'} for alphabet ['a', 'b']
     dictionary = {i: char for i, char in enumerate(alphabet)}
 
+    # Reserve codes (same as encoder)
     EOF_CODE = alphabet_size
     next_code = alphabet_size + 1
     max_size = 1 << max_bits
     EVICT_SIGNAL = max_size - 1
 
-    # Variable-width decoding
+    # Variable-width decoding parameters
     code_bits = min_bits
     threshold = 1 << code_bits
 
-    # LRU tracker for dictionary codes (NOT alphabet codes)
+    # LRU tracker for dictionary entries (NOT alphabet entries)
+    # Mirrors encoder's LRU tracker to stay synchronized
     lru_tracker = LRUTracker()
 
-    # OPTIMIZATION 2: Maintain output history (same as encoder)
-    # Note: Decoder only needs the list, not the HashMap
+    # OPTIMIZATION 2 (OLD): Output history for offset-based reconstruction
     # Decoder uses direct indexing: output_history[-offset] which is O(1)
-    # Encoder needs HashMap for reverse lookup: "string" -> position
+    # No need for HashMap (encoder needs linear search for reverse lookup)
     OUTPUT_HISTORY_SIZE = 255
     output_history = []
 
-
-
     # Flag to skip dictionary addition after EVICT_SIGNAL
+    # When EVICT_SIGNAL received, encoder already added entry via eviction
+    # Decoder shouldn't add another entry on next iteration
     skip_next_addition = False
 
     # Read first codeword
@@ -437,13 +437,13 @@ def decompress(input_file, output_file):
     if codeword is None:
         raise ValueError("Corrupted file: unexpected end of file")
 
+    # Empty file case
     if codeword == EOF_CODE:
         reader.close()
         open(output_file, 'wb').close()
         return
 
-    # Decode first codeword
-
+    # Decode and output first codeword
     prev = dictionary[codeword]
 
     with open(output_file, 'wb') as out:
@@ -452,8 +452,10 @@ def decompress(input_file, output_file):
         # Add first output to history
         output_history.append(prev)
 
+        # Main decompression loop
         while True:
             # Check if we need to increase bit width
+            # Happens when next_code reaches threshold (512, 1024, etc.)
             if next_code >= threshold and code_bits < max_bits:
                 code_bits += 1
                 threshold <<= 1
@@ -467,16 +469,14 @@ def decompress(input_file, output_file):
             if codeword == EOF_CODE:
                 break
 
-            # Check for EVICT_SIGNAL
+            # Handle EVICT_SIGNAL (evict-then-use pattern detected by encoder)
             if codeword == EVICT_SIGNAL:
-                # Encoder evicted and is using the code immediately
-
+                # Read eviction information
                 evicted_code = reader.read(code_bits)
                 offset = reader.read(8)
 
-
                 if offset > 0:
-                    # OPTIMIZATION 2: Use output history + suffix
+                    # OPTIMIZATION 2: Reconstruct from offset+suffix
                     suffix_byte = reader.read(8)
                     suffix = chr(suffix_byte)
 
@@ -486,47 +486,46 @@ def decompress(input_file, output_file):
 
                     prefix = output_history[-offset]
                     new_entry = prefix + suffix
-
                 else:
-                    # Fallback: full entry provided
+                    # Fallback: full entry provided (prefix not in recent history)
                     entry_length = reader.read(16)
                     new_entry = ''.join(chr(reader.read(8)) for _ in range(entry_length))
 
-
-                # Remove old entry from LRU tracker (if tracked)
+                # Remove old entry from LRU tracker (if it's a dictionary entry)
                 if evicted_code in dictionary and evicted_code >= alphabet_size + 1:
                     lru_tracker.remove(evicted_code)
 
-                # Add reconstructed entry at the specified code position
+                # Add new entry at the evicted code position
                 dictionary[evicted_code] = new_entry
                 lru_tracker.use(evicted_code)
 
-
-                # Set flag to skip dictionary addition on next iteration
+                # Skip dictionary addition on next iteration
+                # Encoder already added an entry when it evicted
                 skip_next_addition = True
 
-                # Don't output anything, don't update prev, continue to next code
+                # Continue to next codeword (don't output, don't update prev)
                 continue
 
-
-            # Decode codeword
+            # Decode codeword to string
             if codeword in dictionary:
                 current = dictionary[codeword]
             elif codeword == next_code:
-                # Special LZW case
+                # Special LZW case: codeword not in dictionary yet
+                # Happens when pattern is: ...AB + ABA where AB just got added
                 current = prev + prev[0]
             else:
                 raise ValueError(f"Invalid codeword: {codeword}")
 
-            # Write decoded string
+            # Output decoded string
             out.write(current.encode('latin-1'))
 
-            # OPTIMIZATION 2: Add to output history
+            # Add to output history (circular buffer)
             output_history.append(current)
             if len(output_history) > OUTPUT_HISTORY_SIZE:
                 output_history.pop(0)
 
-            # Add new entry to dictionary (this is where eviction might happen)
+            # Add new entry to dictionary (mirror encoder's logic)
+            # Skip if previous iteration received EVICT_SIGNAL
             if not skip_next_addition:
                 new_entry = prev + current[0]
 
@@ -539,31 +538,26 @@ def decompress(input_file, output_file):
                     # Dictionary FULL - mirror encoder's LRU eviction
                     lru_code = lru_tracker.find_lru()
                     if lru_code is not None:
-                        lru_entry = dictionary[lru_code]
-
-
-                        # Remove old entry
+                        # Remove old entry from dictionary and tracker
                         del dictionary[lru_code]
                         lru_tracker.remove(lru_code)
 
-                        # Add new entry at evicted position
+                        # Add new entry at evicted code position
                         dictionary[lru_code] = new_entry
                         lru_tracker.use(lru_code)
-            else:
-                pass  # Decoder skips addition after receiving EVICT_SIGNAL
 
-            # Reset flag after processing
+            # Reset skip flag
             skip_next_addition = False
 
-            # Update LRU for codeword if tracked
+            # Update LRU for the codeword we just used (if it's a dictionary entry)
             if codeword >= alphabet_size + 1 and codeword < EVICT_SIGNAL:
                 if codeword in dictionary:
                     lru_tracker.use(codeword)
 
+            # Update prev for next iteration
             prev = current
 
     reader.close()
-
 
     print(f"Decompressed: {input_file} -> {output_file}")
 
