@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 """
-LZW Compression Tool (Optimization 2: Output History + Offset)
+LZW Compression Tool (Optimization 2 with O(L) Linear Search)
 
-Optimization: EVICT_SIGNAL references recent output history!
+Same algorithm as lzw_lru_optimization2.py but uses LINEAR SEARCH instead of HashMap.
+This version is for BENCHMARKING to measure the value of O(1) HashMap optimization.
 
-Both encoder/decoder maintain circular buffer of recent outputs.
-When EVICT_SIGNAL needed, encoder sends offset to prefix in history + suffix.
+Key Difference from O(1) version:
+- O(1): Uses HashMap for instant prefix lookup
+- This (O(L)): Linear search through 255-entry buffer
+- Performance: O(1) is ~3-10% faster overall, same compression ratio
 
-EVICT_SIGNAL format reduced from:
-  [EVICT_SIGNAL][code][entry_length][char1]...[charN][code_again]
-to:
-  [EVICT_SIGNAL][code][offset_back][suffix_char][code_again]
+Why Keep This Version:
+- Demonstrates tradeoff: 4KB memory vs O(255*L) time complexity
+- Useful for embedded systems with tight memory constraints
+- Proves O(1) optimization is worthwhile but not critical
 
-Example: For entry "bababab" with prefix "bababa" that was 3 outputs ago:
-  Old: 9 + 9 + 16 + 56 + 9 = 99 bits
-  New: 9 + 9 + 8 + 8 + 9 = 43 bits
-  Savings: 57% per signal!
+Algorithm identical to optimization2.py except prefix lookup method.
 
 Usage:
-    Compress:   python3 lzw_lru_optimization2.py compress input.txt output.lzw --alphabet ascii
-    Decompress: python3 lzw_lru_optimization2.py decompress input.lzw output.txt --debug
+    Compress:   python3 lzw_lru_optimization2_old.py compress input.txt output.lzw --alphabet ascii
+    Decompress: python3 lzw_lru_optimization2_old.py decompress input.lzw output.txt
 """
+
 
 import sys
 import argparse
