@@ -244,6 +244,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
         first_char = chr(first_byte[0])
 
         # Validate first character is in alphabet
+        # This guarantees first codeword in compressed file is valid
         if first_char not in valid_chars:
             raise ValueError(f"Byte value {first_byte[0]} at position 0 not in alphabet")
 
@@ -274,6 +275,7 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                 output_code = dictionary[current]
 
                 # OPTIMIZATION 2: Check if this code was evicted and is being reused
+                # This is the "evict-then-use" pattern that requires EVICT_SIGNAL
                 if output_code in evicted_codes:
                     # Unpack stored entry and prefix
                     entry, prefix = evicted_codes[output_code]
