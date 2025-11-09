@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """
-LZW Compression Tool (Optimization 2: Hashmap + Suffix EVICT_SIGNAL)
+LZW Compression Tool (Optimization 2: Output History + Offset)
 
-Optimization: EVICT_SIGNAL sends only 1-byte suffix instead of full entry!
+Optimization: EVICT_SIGNAL references recent output history!
 
-Decoder maintains hashmap of current outputs at eviction time.
-When EVICT_SIGNAL arrives, decoder reconstructs: stored_prefix + suffix.
+Both encoder/decoder maintain circular buffer of recent outputs.
+When EVICT_SIGNAL needed, encoder sends offset to prefix in history + suffix.
 
 EVICT_SIGNAL format reduced from:
   [EVICT_SIGNAL][code][entry_length][char1]...[charN][code_again]
 to:
-  [EVICT_SIGNAL][code][suffix_char][code_again]
+  [EVICT_SIGNAL][code][offset_back][suffix_char][code_again]
 
-Typical savings: 75 bits → 35 bits (53% reduction per signal)
+Example: For entry "bababab" with prefix "bababa" that was 3 outputs ago:
+  Old: 9 + 9 + 16 + 56 + 9 = 99 bits
+  New: 9 + 9 + 8 + 8 + 9 = 43 bits
+  Savings: 57% per signal!
 
 Usage:
     Compress:   python3 lzw_lru_optimization2.py compress input.txt output.lzw --alphabet ascii
@@ -198,15 +201,21 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # evicted_codes[code] = (full_entry, prefix_at_eviction_time)
     evicted_codes = {}
 
+    # OPTIMIZATION 2: Maintain circular buffer of recent outputs
+    # Max 255 entries (8-bit offset), stores recent output strings
+    OUTPUT_HISTORY_SIZE = 255
+    output_history = []
+
     debug_print("\n" + "="*80)
     debug_print("OPTIMIZATION 2 ENCODER START")
     debug_print("="*80)
-    debug_print(f"Strategy: Send only 1-byte suffix - decoder has prefix in hashmap!")
+    debug_print(f"Strategy: Reference output history with offset + suffix!")
     debug_print("="*80 + "\n")
 
     signal_count = 0
     eviction_count = 0
     output_count = 0
+    fallback_count = 0  # Times we couldn't find prefix in history
 
     # Read and compress
     with open(input_file, 'rb') as f:
@@ -249,8 +258,8 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                     debug_print(f"[ENC] *** EVICT-THEN-USE DETECTED! ***")
                     debug_print(f"[ENC] Code {output_code} was evicted, now being used")
 
-                    # OPTIMIZATION 2: Hashmap + Suffix EVICT_SIGNAL format:
-                    # [EVICT_SIGNAL][code][suffix_char][code_again]
+                    # OPTIMIZATION 2: Output History + Offset format:
+                    # [EVICT_SIGNAL][code][offset][suffix][code_again]
                     #
                     # Unpack stored entry and prefix
                     entry, prefix = evicted_codes[output_code]
@@ -260,15 +269,39 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                     if len(suffix) != 1:
                         raise ValueError(f"Logic error: suffix should be 1 char, got {len(suffix)} (entry='{entry}', prefix='{prefix}')")
 
-                    debug_print(f"[ENC] Entry='{entry}', prefix='{prefix}', suffix='{suffix}'")
-                    debug_print(f"[ENC] Sending suffix-only EVICT_SIGNAL")
+                    # Search for prefix in output history (most recent first)
+                    offset = None
+                    for i in range(len(output_history) - 1, -1, -1):
+                        if output_history[i] == prefix:
+                            offset = len(output_history) - i
+                            break
 
-                    writer.write(EVICT_SIGNAL, code_bits)
-                    writer.write(output_code, code_bits)
-                    writer.write(ord(suffix), 8)  # Just 1 byte!
+                    if offset is not None and offset <= 255:
+                        # Found in history! Send compact format
+                        debug_print(f"[ENC] Entry='{entry}', prefix='{prefix}' found at offset={offset}, suffix='{suffix}'")
+                        debug_print(f"[ENC] Sending offset-based EVICT_SIGNAL")
 
-                    signal_count += 1
-                    debug_print(f"[ENC] Signal sent: code={output_code}, suffix='{suffix}'")
+                        writer.write(EVICT_SIGNAL, code_bits)
+                        writer.write(output_code, code_bits)
+                        writer.write(offset, 8)  # 1 byte offset
+                        writer.write(ord(suffix), 8)  # 1 byte suffix
+
+                        signal_count += 1
+                        debug_print(f"[ENC] Signal sent: code={output_code}, offset={offset}, suffix='{suffix}'")
+                    else:
+                        # Fallback: send full entry (prefix not in recent history)
+                        fallback_count += 1
+                        debug_print(f"[ENC] Prefix not found in history, using fallback (full entry)")
+                        debug_print(f"[ENC] Sending full entry: '{entry}'")
+
+                        writer.write(EVICT_SIGNAL, code_bits)
+                        writer.write(output_code, code_bits)
+                        writer.write(0, 8)  # offset=0 signals "full entry follows"
+                        writer.write(len(entry), 16)
+                        for c in entry:
+                            writer.write(ord(c), 8)
+
+                        signal_count += 1
 
                     # Remove from evicted_codes since we've now synced it
                     del evicted_codes[output_code]
@@ -277,6 +310,11 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                 writer.write(output_code, code_bits)  # Code sent again (data)
                 output_count += 1
                 debug_print(f"[ENC #{output_count}] OUTPUT code={output_code} for '{current}' ({code_bits} bits)")
+
+                # OPTIMIZATION 2: Add to output history
+                output_history.append(current)
+                if len(output_history) > OUTPUT_HISTORY_SIZE:
+                    output_history.pop(0)  # Remove oldest
 
                 # Update LRU if current phrase is tracked
                 if lru_tracker.contains(current):
@@ -331,16 +369,37 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
         entry, prefix = evicted_codes[final_code]
         suffix = entry[len(prefix):]
 
-        writer.write(EVICT_SIGNAL, code_bits)
-        writer.write(final_code, code_bits)
-        writer.write(ord(suffix), 8)
+        # Search for prefix in output history
+        offset = None
+        for i in range(len(output_history) - 1, -1, -1):
+            if output_history[i] == prefix:
+                offset = len(output_history) - i
+                break
 
-        signal_count += 1
+        if offset is not None and offset <= 255:
+            writer.write(EVICT_SIGNAL, code_bits)
+            writer.write(final_code, code_bits)
+            writer.write(offset, 8)
+            writer.write(ord(suffix), 8)
+            signal_count += 1
+        else:
+            writer.write(EVICT_SIGNAL, code_bits)
+            writer.write(final_code, code_bits)
+            writer.write(0, 8)
+            writer.write(len(entry), 16)
+            for c in entry:
+                writer.write(ord(c), 8)
+            signal_count += 1
+            fallback_count += 1
+
         del evicted_codes[final_code]
 
     writer.write(final_code, code_bits)
     output_count += 1
     debug_print(f"[ENC #{output_count}] OUTPUT code={final_code} for '{current}' (final)")
+
+    # Add final output to history
+    output_history.append(current)
 
     if lru_tracker.contains(current):
         lru_tracker.use(current)
@@ -360,6 +419,8 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     debug_print(f"Total outputs: {output_count}")
     debug_print(f"Total evictions: {eviction_count}")
     debug_print(f"Signals sent: {signal_count}")
+    debug_print(f"Offset-based signals: {signal_count - fallback_count}")
+    debug_print(f"Fallback (full entry): {fallback_count}")
     debug_print(f"Optimization: {signal_count}/{eviction_count} = {signal_count/eviction_count*100:.1f}% of evictions signaled" if eviction_count > 0 else "No evictions")
     debug_print("="*80 + "\n")
 
@@ -398,19 +459,20 @@ def decompress(input_file, output_file):
     # LRU tracker for dictionary codes (NOT alphabet codes)
     lru_tracker = LRUTracker()
 
-    # OPTIMIZATION 2: Track current output at eviction time
-    # Maps evicted_code -> current output when that code was evicted
-    eviction_current = {}
+    # OPTIMIZATION 2: Maintain output history (same as encoder)
+    OUTPUT_HISTORY_SIZE = 255
+    output_history = []
 
     debug_print("\n" + "="*80)
     debug_print("OPTIMIZATION 2 DECODER START")
     debug_print("="*80)
-    debug_print(f"Strategy: Store prefix in hashmap, reconstruct with suffix")
+    debug_print(f"Strategy: Look up prefix in output history using offset")
     debug_print("="*80 + "\n")
 
     signal_count = 0
     eviction_count = 0
     input_count = 0
+    fallback_count = 0
 
     # Flag to skip dictionary addition after EVICT_SIGNAL
     skip_next_addition = False
@@ -438,6 +500,9 @@ def decompress(input_file, output_file):
     with open(output_file, 'wb') as out:
         out.write(prev.encode('latin-1'))
 
+        # Add first output to history
+        output_history.append(prev)
+
         while True:
             # Check if we need to increase bit width
             if next_code >= threshold and code_bits < max_bits:
@@ -461,19 +526,30 @@ def decompress(input_file, output_file):
                 debug_print(f"[DEC] *** EVICT_SIGNAL received ***")
 
                 evicted_code = reader.read(code_bits)
-                suffix_byte = reader.read(8)
-                suffix = chr(suffix_byte)
-
-                # OPTIMIZATION 2: Reconstruct using stored prefix + received suffix
-                prefix = eviction_current.get(evicted_code)
-                if prefix is None:
-                    raise ValueError(f"No eviction record for code {evicted_code}")
-
-                new_entry = prefix + suffix
+                offset = reader.read(8)
 
                 signal_count += 1
-                debug_print(f"[DEC] Signal: code={evicted_code}")
-                debug_print(f"[DEC] Prefix='{prefix}' (from hashmap) + suffix='{suffix}' = '{new_entry}'")
+
+                if offset > 0:
+                    # OPTIMIZATION 2: Use output history + suffix
+                    suffix_byte = reader.read(8)
+                    suffix = chr(suffix_byte)
+
+                    # Look back in output history
+                    if offset > len(output_history):
+                        raise ValueError(f"Invalid offset {offset}, history size {len(output_history)}")
+
+                    prefix = output_history[-offset]
+                    new_entry = prefix + suffix
+
+                    debug_print(f"[DEC] Offset={offset}, prefix='{prefix}' (from history) + suffix='{suffix}' = '{new_entry}'")
+                else:
+                    # Fallback: full entry provided
+                    fallback_count += 1
+                    entry_length = reader.read(16)
+                    new_entry = ''.join(chr(reader.read(8)) for _ in range(entry_length))
+
+                    debug_print(f"[DEC] Fallback mode: full entry='{new_entry}'")
 
                 # Remove old entry from LRU tracker (if tracked)
                 if evicted_code in dictionary and evicted_code >= alphabet_size + 1:
@@ -508,6 +584,11 @@ def decompress(input_file, output_file):
             # Write decoded string
             out.write(current.encode('latin-1'))
 
+            # OPTIMIZATION 2: Add to output history
+            output_history.append(current)
+            if len(output_history) > OUTPUT_HISTORY_SIZE:
+                output_history.pop(0)
+
             # Add new entry to dictionary (this is where eviction might happen)
             if not skip_next_addition:
                 new_entry = prev + current[0]
@@ -518,15 +599,6 @@ def decompress(input_file, output_file):
                     lru_tracker.use(next_code)
                     debug_print(f"[DEC] ADDED code={next_code} -> '{new_entry}'")
                     next_code += 1
-
-                    # OPTIMIZATION 2: If next_code just reached EVICT_SIGNAL, prepare for evictions
-                    # Due to 1-iteration offset, encoder evicts earlier, so store LRU prefix NOW
-                    if next_code == EVICT_SIGNAL:
-                        # Encoder just evicted the LRU code using current as prefix
-                        lru_code = lru_tracker.find_lru()
-                        if lru_code is not None:
-                            eviction_current[lru_code] = current
-                            debug_print(f"[DEC] Pre-stored eviction_current[{lru_code}] = '{current}' (dict now full)")
                 else:
                     # Dictionary FULL - mirror encoder's LRU eviction
                     lru_code = lru_tracker.find_lru()
@@ -536,10 +608,6 @@ def decompress(input_file, output_file):
                         eviction_count += 1
                         debug_print(f"[DEC] EVICTING code={lru_code} -> '{lru_entry}' (LRU)")
                         debug_print(f"[DEC] ADDING code={lru_code} -> '{new_entry}' (mirroring encoder)")
-
-                        # OPTIMIZATION 2: Store current output for potential reconstruction
-                        eviction_current[lru_code] = current
-                        debug_print(f"[DEC] Stored eviction_current[{lru_code}] = '{current}'")
 
                         # Remove old entry
                         del dictionary[lru_code]
@@ -569,6 +637,8 @@ def decompress(input_file, output_file):
     debug_print(f"Total inputs: {input_count}")
     debug_print(f"Total evictions: {eviction_count}")
     debug_print(f"Signals received: {signal_count}")
+    debug_print(f"Offset-based signals: {signal_count - fallback_count}")
+    debug_print(f"Fallback (full entry): {fallback_count}")
     debug_print("="*80 + "\n")
 
     print(f"Decompressed: {input_file} -> {output_file}")
