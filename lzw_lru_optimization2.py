@@ -420,7 +420,13 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                             current_end_idx = history_start_idx + len(output_history) - 1
                             offset = current_end_idx - prefix_global_idx + 1
 
-                    if offset is not None and offset <= 255:
+                    if offset is not None:
+                        # Should be impossible - catch bugs in circular buffer logic
+                        if offset > 255:
+                            raise ValueError(f"Bug in circular buffer: offset {offset} exceeds 255! "
+                                           f"history_size={len(output_history)}, prefix_idx={prefix_global_idx}, "
+                                           f"history_start={history_start_idx}")
+
                         # Prefix found in recent history! Send compact EVICT_SIGNAL
                         # Format: [EVICT_SIGNAL][code][offset][suffix]
                         # Total: code_bits + code_bits + 8 + 8 = 34 bits (for 9-bit codes)

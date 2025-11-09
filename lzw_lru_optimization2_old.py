@@ -297,7 +297,12 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                             offset = len(output_history) - i
                             break
 
-                    if offset is not None and offset <= 255:
+                    if offset is not None:
+                        # Should be impossible - catch bugs in circular buffer logic
+                        if offset > 255:
+                            raise ValueError(f"Bug in circular buffer: offset {offset} exceeds 255! "
+                                           f"history_size={len(output_history)}")
+
                         # Send compact EVICT_SIGNAL: [EVICT_SIGNAL][code][offset][suffix]
                         writer.write(EVICT_SIGNAL, code_bits)
                         writer.write(output_code, code_bits)
@@ -377,7 +382,12 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                 offset = len(output_history) - i
                 break
 
-        if offset is not None and offset <= 255:
+        if offset is not None:
+            # Should be impossible - catch bugs in circular buffer logic
+            if offset > 255:
+                raise ValueError(f"Bug in circular buffer: offset {offset} exceeds 255! "
+                               f"history_size={len(output_history)}")
+
             # Send compact EVICT_SIGNAL
             writer.write(EVICT_SIGNAL, code_bits)
             writer.write(final_code, code_bits)
