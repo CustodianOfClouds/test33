@@ -1,21 +1,49 @@
 #!/usr/bin/env python3
 """
-LZW Compression Tool (Optimization 2 with O(L) Linear Search)
+LZW Compression Tool (Optimization 2: Output History + Offset/Suffix with O(L) Linear Search)
 
-Same algorithm as lzw_lru_optimization2.py but uses LINEAR SEARCH instead of HashMap.
-This version is for BENCHMARKING to measure the value of O(1) HashMap optimization.
+Implements LZW compression with LRU (Least Recently Used) eviction policy.
+This is OPTIMIZATION 2 (LINEAR SEARCH VERSION): Uses O(L) search instead of O(1) HashMap.
 
-Key Difference from O(1) version:
-- O(1): Uses HashMap for instant prefix lookup
-- This (O(L)): Linear search through 255-entry buffer
-- Performance: O(1) is ~3-10% faster overall, same compression ratio
+Implements LZW compression with LRU eviction, using an OPTIMIZED signaling strategy:
+- Only sends EVICT_SIGNAL when encoder evicts code C and immediately uses C (~10-30% of evictions)
+- Instead of sending full entry, uses output history to send compact offset+suffix
+- This reduces EVICT_SIGNAL size by ~57% (34 bits vs 123 bits for 10-char entry)
+- LINEAR SEARCH: Uses O(255*L) search vs O(1) HashMap (for benchmarking comparison)
 
-Why Keep This Version:
-- Demonstrates tradeoff: 4KB memory vs O(255*L) time complexity
-- Useful for embedded systems with tight memory constraints
-- Proves O(1) optimization is worthwhile but not critical
+How It Works:
+1. Encoder tracks all evicted codes in a dictionary (like Optimization 1)
+2. Encoder maintains circular buffer of last 255 outputs WITHOUT HashMap
+3. When about to output a code that was recently evicted:
+   a. LINEAR SEARCH through output history to find prefix position
+   b. Send compact [offset][suffix] (2 bytes) if found
+   c. If prefix not in history, fall back to full entry format
+4. Decoder maintains same output history, reconstructs entry from offset+suffix
+5. Both stay synchronized through LRU tracking and output history mirroring
 
-Algorithm identical to optimization2.py except prefix lookup method.
+Data Structure:
+- Doubly-linked list + HashMap for O(1) LRU operations
+- head.next = most recently used (MRU)
+- tail.prev = least recently used (LRU)
+- Sentinel head/tail nodes eliminate edge cases
+- Output history: Circular buffer (last 255 outputs) WITHOUT HashMap (linear search)
+
+LINEAR SEARCH vs HASH MAP Tradeoff:
+- This version: O(255*L) search, minimal memory (~0KB overhead)
+- HashMap version: O(1) search, ~4KB memory overhead
+- Performance: HashMap is ~3-10% faster overall for typical files
+- Compression ratio: Identical (both use same algorithm)
+- Use case: This version for memory-constrained embedded systems
+
+EVICT_SIGNAL Format (Compact - used ~95% of time):
+- [EVICT_SIGNAL][code][offset][suffix][code_again]
+- Total: code_bits + code_bits + 8 + 8 + code_bits bits
+- Example (9-bit codes): 9+9+8+8+9 = 43 bits (vs 123 bits in Opt-1!)
+
+EVICT_SIGNAL Format (Fallback - when prefix not in recent history):
+- [EVICT_SIGNAL][code][0][entry_length][char1]...[charN][code_again]
+- offset=0 signals "full entry follows" (0 is never a valid offset)
+- Example (9-bit codes, 10-char entry): 9+9+8+16+80+9 = 131 bits
 
 Usage:
     Compress:   python3 lzw_lru_optimization2_old.py compress input.txt output.lzw --alphabet ascii
@@ -27,18 +55,18 @@ import sys
 import argparse
 from typing import TypeVar, Generic, Optional, Dict
 
-# Predefined alphabets
+# Predefined alphabets - add more here as needed
 ALPHABETS = {
-    'ascii': [chr(i) for i in range(128)],
-    'extendedascii': [chr(i) for i in range(256)],
-    'ab': ['a', 'b']
+    'ascii': [chr(i) for i in range(128)],         # Standard ASCII (0-127)
+    'extendedascii': [chr(i) for i in range(256)], # Extended ASCII (0-255)
+    'ab': ['a', 'b']                               # Binary alphabet for testing
 }
-
-# Global debug flag
 
 # ============================================================================
 # BIT-LEVEL I/O CLASSES
 # ============================================================================
+# LZW uses variable-width codes (9 bits, 10 bits, etc.) but files are stored
+# as bytes (8 bits). These classes handle the bit-to-byte conversion.
 
 class BitWriter:
     """Writes variable-width integers as a stream of bits to a binary file."""
