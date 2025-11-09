@@ -542,11 +542,12 @@ def decompress(input_file, output_file):
             out.write(current.encode('latin-1'))
 
             # Add new entry to dictionary
-            # Note: Once dict fills, next_code keeps incrementing but is never used!
-            # Encoder sends EVICT_SIGNAL with explicit code: dictionary[evict_code] = entry
-            # So next_code synchronization is NOT required in decoder
-            dictionary[next_code] = prev + current[0]
-            next_code += 1
+            # Check prevents next_code from growing unbounded (cleaner code hygiene)
+            # Note: Check not required for correctness - next_code unused after dict fills
+            # (encoder sends explicit codes via EVICT_SIGNAL), but keeps next_code clean
+            if next_code < EVICT_SIGNAL:
+                dictionary[next_code] = prev + current[0]
+                next_code += 1
 
             # Update previous string for next iteration
             prev = current
