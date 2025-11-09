@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-LZW Compression Tool (Optimization 2: Minimal EVICT_SIGNAL)
+LZW Compression Tool (Optimization 2: Hashmap + Suffix EVICT_SIGNAL)
 
-Further optimization: EVICT_SIGNAL no longer includes dictionary entry bytes!
-Instead, decoder reconstructs entry using the standard LZW rule: prev + prev[0]
+Optimization: EVICT_SIGNAL sends only 1-byte suffix instead of full entry!
+
+Decoder maintains hashmap of current outputs at eviction time.
+When EVICT_SIGNAL arrives, decoder reconstructs: stored_prefix + suffix.
 
 EVICT_SIGNAL format reduced from:
   [EVICT_SIGNAL][code][entry_length][char1]...[charN][code_again]
 to:
-  [EVICT_SIGNAL][code][code_again]
+  [EVICT_SIGNAL][code][suffix_char][code_again]
 
-This saves ~78% per signal (typical: 123 bits → 27 bits)
+Typical savings: 75 bits → 35 bits (53% reduction per signal)
 
 Usage:
     Compress:   python3 lzw_lru_optimization2.py compress input.txt output.lzw --alphabet ascii
@@ -193,12 +195,13 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     lru_tracker = LRUTracker()
 
     # Track ALL evicted codes and their new values (since dict became full)
+    # evicted_codes[code] = (full_entry, prefix_at_eviction_time)
     evicted_codes = {}
 
     debug_print("\n" + "="*80)
     debug_print("OPTIMIZATION 2 ENCODER START")
     debug_print("="*80)
-    debug_print(f"Strategy: Minimal EVICT_SIGNAL - decoder reconstructs entry!")
+    debug_print(f"Strategy: Send only 1-byte suffix - decoder has prefix in hashmap!")
     debug_print("="*80 + "\n")
 
     signal_count = 0
@@ -245,18 +248,27 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                     # Encoder is about to use a code that was evicted!
                     debug_print(f"[ENC] *** EVICT-THEN-USE DETECTED! ***")
                     debug_print(f"[ENC] Code {output_code} was evicted, now being used")
-                    debug_print(f"[ENC] Sending minimal EVICT_SIGNAL")
 
-                    # OPTIMIZATION 2: Minimal EVICT_SIGNAL format:
-                    # [EVICT_SIGNAL][code][code_again]
+                    # OPTIMIZATION 2: Hashmap + Suffix EVICT_SIGNAL format:
+                    # [EVICT_SIGNAL][code][suffix_char][code_again]
                     #
-                    # Decoder will reconstruct entry using: prev + prev[0]
-                    # This is the standard LZW "unknown code" rule!
+                    # Unpack stored entry and prefix
+                    entry, prefix = evicted_codes[output_code]
+
+                    # Compute suffix: the character that extends prefix to entry
+                    suffix = entry[len(prefix):]
+                    if len(suffix) != 1:
+                        raise ValueError(f"Logic error: suffix should be 1 char, got {len(suffix)} (entry='{entry}', prefix='{prefix}')")
+
+                    debug_print(f"[ENC] Entry='{entry}', prefix='{prefix}', suffix='{suffix}'")
+                    debug_print(f"[ENC] Sending suffix-only EVICT_SIGNAL")
+
                     writer.write(EVICT_SIGNAL, code_bits)
-                    writer.write(output_code, code_bits)  # Code sent here (metadata)
+                    writer.write(output_code, code_bits)
+                    writer.write(ord(suffix), 8)  # Just 1 byte!
 
                     signal_count += 1
-                    debug_print(f"[ENC] Minimal signal sent for code={output_code}")
+                    debug_print(f"[ENC] Signal sent: code={output_code}, suffix='{suffix}'")
 
                     # Remove from evicted_codes since we've now synced it
                     del evicted_codes[output_code]
@@ -302,9 +314,10 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
                         lru_tracker.use(combined)
 
                         # Track this eviction in case code is used later
-                        evicted_codes[lru_code] = combined
+                        # Store both the full entry and the prefix (current phrase being output)
+                        evicted_codes[lru_code] = (combined, current)
 
-                        debug_print(f"[ENC] Tracking evicted code={lru_code} for potential use")
+                        debug_print(f"[ENC] Tracking evicted code={lru_code}: entry='{combined}', prefix='{current}'")
 
                 current = char
 
@@ -314,8 +327,14 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # Check if final code was evicted
     if final_code in evicted_codes:
         debug_print(f"[ENC] *** EVICT-THEN-USE on final phrase! ***")
+
+        entry, prefix = evicted_codes[final_code]
+        suffix = entry[len(prefix):]
+
         writer.write(EVICT_SIGNAL, code_bits)
         writer.write(final_code, code_bits)
+        writer.write(ord(suffix), 8)
+
         signal_count += 1
         del evicted_codes[final_code]
 
@@ -379,10 +398,14 @@ def decompress(input_file, output_file):
     # LRU tracker for dictionary codes (NOT alphabet codes)
     lru_tracker = LRUTracker()
 
+    # OPTIMIZATION 2: Track current output at eviction time
+    # Maps evicted_code -> current output when that code was evicted
+    eviction_current = {}
+
     debug_print("\n" + "="*80)
     debug_print("OPTIMIZATION 2 DECODER START")
     debug_print("="*80)
-    debug_print(f"Strategy: Reconstruct evicted entries using prev + prev[0]")
+    debug_print(f"Strategy: Store prefix in hashmap, reconstruct with suffix")
     debug_print("="*80 + "\n")
 
     signal_count = 0
@@ -438,13 +461,19 @@ def decompress(input_file, output_file):
                 debug_print(f"[DEC] *** EVICT_SIGNAL received ***")
 
                 evicted_code = reader.read(code_bits)
+                suffix_byte = reader.read(8)
+                suffix = chr(suffix_byte)
 
-                # OPTIMIZATION 2: Reconstruct entry using prev + prev[0]
-                # This is the standard LZW "unknown code" rule!
-                new_entry = prev + prev[0]
+                # OPTIMIZATION 2: Reconstruct using stored prefix + received suffix
+                prefix = eviction_current.get(evicted_code)
+                if prefix is None:
+                    raise ValueError(f"No eviction record for code {evicted_code}")
+
+                new_entry = prefix + suffix
 
                 signal_count += 1
-                debug_print(f"[DEC] Signal: code={evicted_code}, reconstructed: '{new_entry}'")
+                debug_print(f"[DEC] Signal: code={evicted_code}")
+                debug_print(f"[DEC] Prefix='{prefix}' (from hashmap) + suffix='{suffix}' = '{new_entry}'")
 
                 # Remove old entry from LRU tracker (if tracked)
                 if evicted_code in dictionary and evicted_code >= alphabet_size + 1:
@@ -454,7 +483,7 @@ def decompress(input_file, output_file):
                 dictionary[evicted_code] = new_entry
                 lru_tracker.use(evicted_code)
 
-                debug_print(f"[DEC] Dictionary updated from reconstructed entry")
+                debug_print(f"[DEC] Dictionary updated: [{evicted_code}] = '{new_entry}'")
 
                 # Set flag to skip dictionary addition on next iteration
                 skip_next_addition = True
@@ -489,6 +518,15 @@ def decompress(input_file, output_file):
                     lru_tracker.use(next_code)
                     debug_print(f"[DEC] ADDED code={next_code} -> '{new_entry}'")
                     next_code += 1
+
+                    # OPTIMIZATION 2: If next_code just reached EVICT_SIGNAL, prepare for evictions
+                    # Due to 1-iteration offset, encoder evicts earlier, so store LRU prefix NOW
+                    if next_code == EVICT_SIGNAL:
+                        # Encoder just evicted the LRU code using current as prefix
+                        lru_code = lru_tracker.find_lru()
+                        if lru_code is not None:
+                            eviction_current[lru_code] = current
+                            debug_print(f"[DEC] Pre-stored eviction_current[{lru_code}] = '{current}' (dict now full)")
                 else:
                     # Dictionary FULL - mirror encoder's LRU eviction
                     lru_code = lru_tracker.find_lru()
@@ -498,6 +536,10 @@ def decompress(input_file, output_file):
                         eviction_count += 1
                         debug_print(f"[DEC] EVICTING code={lru_code} -> '{lru_entry}' (LRU)")
                         debug_print(f"[DEC] ADDING code={lru_code} -> '{new_entry}' (mirroring encoder)")
+
+                        # OPTIMIZATION 2: Store current output for potential reconstruction
+                        eviction_current[lru_code] = current
+                        debug_print(f"[DEC] Stored eviction_current[{lru_code}] = '{current}'")
 
                         # Remove old entry
                         del dictionary[lru_code]
