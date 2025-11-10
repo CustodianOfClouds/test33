@@ -194,59 +194,19 @@ In basic LZW, the decoder reconstructs the dictionary by watching the encoder's 
 - When encoder outputs a recently-evicted code, send a special **EVICT_SIGNAL** to tell the decoder the new value
 - Decoder updates its dictionary when it receives EVICT_SIGNAL
 
-This repository implements **three versions of LRU** with progressively better optimizations:
+This repository implements **two production-ready LRU versions** (v2 and v2.1) with compact EVICT_SIGNAL encoding:
+
+**Development Evolution:**
+- **Naive LRU** (`lzw_lru_naive.py`): Signals on every eviction → massive overhead, not practical
+- **Optimization 1** (`lzw_lru_optimized.py`): Signals only on evict-then-use pattern (~10-30% of evictions) → 70-90% signal reduction but still large signals (123 bits for 10-char entry), not recommended for production
+- **Optimization 2 (v2)** (`lzw_lru_optimization2.py`): Compact offset+suffix encoding → practical for real use ✓
+- **v2.1** (latest): Further optimizations → **recommended** ✓
+
+**Note:** Only v2 and v2.1 are viable for actual use. The naive and Opt1 implementations exist for educational purposes and to show the development progression.
 
 ---
 
-#### LRU Optimization 1: Evict-Then-Use Pattern Detection
-
-**Implementation:** `lzw_lru_optimized.py`
-
-**Key Insight:** Not all evictions need a signal!
-
-The decoder can reconstruct most evicted entries naturally by observing the output pattern. We only need EVICT_SIGNAL in the **evict-then-use** pattern:
-1. Encoder evicts code `C` (replaces its entry)
-2. Encoder **immediately outputs code `C`** with its new value
-
-This is surprisingly rare (~10-30% of evictions).
-
-**EVICT_SIGNAL Format (Optimization 1):**
-```
-[EVICT_SIGNAL][code][entry_length][char1][char2]...[charN][code_again]
-```
-
-**Bit Cost:**
-- `code_bits` (EVICT_SIGNAL marker)
-- `code_bits` (which code was evicted)
-- 16 bits (entry length)
-- 8 × L bits (entry characters)
-- `code_bits` (repeat the code to actually emit it)
-
-**Example:** 9-bit codes, 10-char entry = 9+9+16+80+9 = **123 bits**
-
-**Signal Reduction:**
-- Naive approach: Signal on every eviction (~100% evictions)
-- Optimization 1: Signal only on evict-then-use (~10-30% evictions)
-- **Result: 70-90% reduction in signals!**
-- Benchmarks show this optimization achieves **55-85% smaller output** compared to the naive full-signaling implementation across typical files (code, archives, images)
-
-**Data Structure:**
-- **Doubly-linked list** for LRU ordering (O(1) move-to-front)
-- **HashMap** for O(1) code lookup
-- Sentinel head/tail nodes to eliminate edge cases
-
-**Pros:**
-- Dramatic reduction in EVICT_SIGNAL overhead
-- Still maintains perfect synchronization
-- Adapts to local patterns
-
-**Cons:**
-- EVICT_SIGNAL still large when needed (123 bits for 10-char entry)
-- Overhead noticeable on files with high eviction rates
-
----
-
-#### LRU Optimization 2: Output History with Offset+Suffix Encoding
+#### LRU v2: Output History with Offset+Suffix Encoding
 
 **Implementations:**
 - `lzw_lru_optimization2.py` (HashMap version - O(1) lookup)
