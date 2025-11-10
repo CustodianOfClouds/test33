@@ -417,24 +417,7 @@ All benchmarks performed with `--min-bits 9 --max-bits 9-16` on various file typ
 
 ### Compression Ratio Comparison
 
-#### **LRU Optimization 1 (Evict-Then-Use Pattern) - Savings vs Full Signaling**
-
-This shows the effectiveness of only sending EVICT_SIGNAL when needed (~10-30% of evictions) instead of every eviction (100%).
-
-| File | FREEZE (baseline) | LRU-FULL (naive) | LRU-OPT-1 | **Opt-1 Savings vs Full** |
-|------|-------------------|------------------|-----------|---------------------------|
-| **code.txt** (69 KB, max-bits 9) | 46 KB (66%) | 284 KB (408%) | 129 KB (185%) | **54.6%** ✓✓ |
-| **large.txt** (1.2 MB, max-bits 9) | 802 KB (67%) | 5,715 KB (475%) | 2,069 KB (172%) | **63.8%** ✓✓✓ |
-| **texts.tar** (1.4 MB, max-bits 9) | 1,163 KB (84%) | 6,396 KB (463%) | 2,367 KB (171%) | **63.0%** ✓✓✓ |
-| **all.tar** (3 MB, max-bits 9) | 2,226 KB (73%) | 11,018 KB (364%) | 4,338 KB (143%) | **60.6%** ✓✓✓ |
-| **frosty.jpg** (127 KB, max-bits 9) | 142 KB (112%) | 926 KB (731%) | 147 KB (116%) | **84.2%** ✓✓✓ |
-| **Random ab** (500 KB, max-bits 9) | 318 KB (64%) | 2,455 KB (491%) | 1,143 KB (229%) | **53.4%** ✓✓ |
-
-**Key Insight:** LRU-OPT-1 saves **55-85%** compared to naive full signaling! Already-compressed files (JPG) show the most dramatic improvement.
-
----
-
-#### **LRU Optimization 2 (Output History + Offset/Suffix) vs Freeze**
+#### **LRU-v2 (Output History + Offset/Suffix) vs Freeze**
 
 This shows the tradeoff between adaptive (LRU-v2) and static (Freeze) dictionaries.
 
