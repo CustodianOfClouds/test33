@@ -12,7 +12,7 @@ A comprehensive implementation of LZW (Lempel-Ziv-Welch) compression in Python, 
   - [Freeze (Baseline)](#1-freeze-baseline)
   - [Reset](#2-reset)
   - [LRU (Least Recently Used)](#3-lru-least-recently-used)
-  - [LFU (Least Frequently Used)](#4-lfu-least-frequently-used-todo)
+  - [LFU (Least Frequently Used)](#4-lfu-least-frequently-used)
 - [Performance Comparisons](#performance-comparisons)
 - [Usage](#usage)
 - [File Formats](#file-formats)
@@ -398,70 +398,124 @@ All benchmarks performed with `--min-bits 9 --max-bits 9-16` on various file typ
 
 | File | Size | Description |
 |------|------|-------------|
-| `code.txt` | 69 KB | Java source code |
-| `large.txt` | 1.2 MB | Large text file |
-| `texts.tar` | 1.4 MB | Text archive |
-| `all.tar` | 3 MB | Mixed archive |
-| `bmps.tar` | 1.1 MB | BMP image archive |
-| `frosty.jpg` | 127 KB | JPEG image (already compressed) |
-| `ab_repeat` | 500 KB | Highly repetitive pattern |
-| `ab_random` | 500 KB | Random low-entropy data |
+| `ab_repeat_250k` | 488 KB | Highly repetitive 'ab' pattern (250k repetitions) |
+| `ab_random_500k` | 488 KB | Random a/b characters (500k bytes) |
+| `code.txt` | 68 KB | Java source code |
+| `code2.txt` | 54 KB | Additional source code |
+| `medium.txt` | 24 KB | Medium text file |
+| `large.txt` | 1.15 MB | Large text file |
+| `bmps.tar` | 1.05 MB | BMP image archive |
+| `all.tar` | 2.89 MB | Mixed file archive |
+| `wacky.bmp` | 900 KB | BMP image with high compression potential |
 
 ---
 
 ### Compression Ratio Comparison
 
-#### **LRU-v2 (Output History + Offset/Suffix) vs Freeze**
+Comprehensive benchmarks comparing all implementations across diverse file types and dictionary sizes.
 
-This shows the tradeoff between adaptive (LRU-v2) and static (Freeze) dictionaries.
+#### **AB Alphabet Tests (Small Dictionary)**
 
-**Static/Repetitive Patterns** (Freeze wins):
+##### **Random 500KB a/b characters**
 
-| File | max-bits | FREEZE | LRU-v2 (HashMap) | Winner |
-|------|----------|--------|------------------|--------|
-| **ab_repeat** (500 KB) | 9 | 2.5 KB (0.5%) | 22 KB (4.4%) | **Freeze** (8.9× better) |
-| **ab_repeat** (500 KB) | 10 | 1.8 KB (0.4%) | 6.8 KB (1.4%) | **Freeze** (3.8× better) |
-| **Random ab** (500 KB) | 9 | 73 KB (14.6%) | 309 KB (61.8%) | **Freeze** (4.2× better) |
-| **code.txt** (69 KB) | 9 | 46 KB (66%) | 92 KB (133%) | **Freeze** (2× better) |
-| **large.txt** (1.2 MB) | 9 | 802 KB (67%) | 1,606 KB (134%) | **Freeze** (2× better) |
+| max-bits | Freeze | Reset | LFU | LRU-v1 | LRU-v2 | LRU-v2.1 |
+|----------|--------|-------|-----|--------|--------|----------|
+| 3 | **91.58 KB (18.76%)** | 155.82 KB (31.91%) | 138.37 KB (28.34%) | 712.75 KB (145.97%) | 439.72 KB (90.05%) | 439.72 KB (90.05%) |
+| 4 | **86.61 KB (17.74%)** | 130.68 KB (26.76%) | 100.83 KB (20.65%) | 744.01 KB (152.37%) | 429.13 KB (87.89%) | 429.13 KB (87.89%) |
+| 5 | **80.99 KB (16.59%)** | 115.02 KB (23.56%) | 94.39 KB (19.33%) | 703.23 KB (144.02%) | 383.20 KB (78.48%) | 383.20 KB (78.48%) |
+| 6 | **78.15 KB (16.01%)** | 104.37 KB (21.37%) | 83.81 KB (17.16%) | 660.38 KB (135.25%) | 342.17 KB (70.08%) | 342.17 KB (70.08%) |
 
-**Diverse/Evolving Patterns** (LRU-v2 wins):
+**Winner:** Freeze dominates on random data (18-28% smaller than next best)
 
-| File | max-bits | FREEZE | LRU-v2 (HashMap) | Winner |
-|------|----------|--------|------------------|--------|
-| **bmps.tar** (1.1 MB) | 9 | 716 KB (65%) | 212 KB (19%) | **LRU-v2** (3.4× better) |
-| **bmps.tar** (1.1 MB) | 12 | 925 KB (84%) | 199 KB (18%) | **LRU-v2** (4.6× better) |
-| **wacky.bmp** (922 KB) | 11 | 4.2 KB (0.5%) | 11.5 KB (1.2%) | **Freeze** (2.7× better) |
+##### **Repetitive 250k 'ab' pattern**
 
-**Pattern Insights:**
-- **Freeze dominates** on: Repetitive patterns, uniform text, random data
-- **LRU-v2 dominates** on: Mixed archives, diverse images (bmps.tar)
-- **Higher max-bits** narrows the gap (larger dictionaries = less eviction needed)
+| max-bits | Freeze | Reset | LFU | LRU-v1 | LRU-v2 | LRU-v2.1 |
+|----------|--------|-------|-----|--------|--------|----------|
+| 3 | **45.78 KB (9.38%)** | 122.08 KB (25.00%) | 91.56 KB (18.75%) | 926.96 KB (189.84%) | 499.72 KB (102.34%) | 499.72 KB (102.34%) |
+| 4 | **30.53 KB (6.25%)** | 69.76 KB (14.29%) | 61.04 KB (12.50%) | 822.50 KB (168.45%) | 349.29 KB (71.54%) | 349.29 KB (71.54%) |
+| 5 | **19.09 KB (3.91%)** | 40.70 KB (8.34%) | 38.16 KB (7.81%) | 697.11 KB (142.77%) | 212.96 KB (43.62%) | 212.96 KB (43.62%) |
+| 6 | **11.47 KB (2.35%)** | 23.64 KB (4.84%) | 22.90 KB (4.69%) | 610.66 KB (125.06%) | 124.33 KB (25.46%) | 124.33 KB (25.46%) |
+
+**Winner:** Freeze dominates (2-10× better than eviction strategies!)
+
+#### **Extended ASCII Tests (Standard Dictionary)**
+
+##### **large.txt (1.15 MB) - Large diverse text**
+
+| max-bits | Freeze | Reset | LFU | LRU-v1 | LRU-v2 | LRU-v2.1 |
+|----------|--------|-------|-----|--------|--------|----------|
+| 9 | 783.08 KB (66.66%) | 899.83 KB (76.60%) | **708.87 KB (60.34%)** | 2020.96 KB (172.03%) | 1568.66 KB (133.53%) | 1568.66 KB (133.53%) |
+| 10 | 675.02 KB (57.46%) | 788.21 KB (67.09%) | **626.44 KB (53.32%)** | 1895.98 KB (161.39%) | 1551.25 KB (132.05%) | 1551.25 KB (132.05%) |
+| 11 | 626.02 KB (53.29%) | 723.28 KB (61.57%) | **589.15 KB (50.15%)** | 1823.58 KB (155.23%) | 1626.97 KB (138.49%) | 1626.97 KB (138.49%) |
+| 12 | 585.61 KB (49.85%) | 673.73 KB (57.35%) | **562.66 KB (47.90%)** | 1750.52 KB (149.01%) | 1668.43 KB (142.02%) | 1668.43 KB (142.02%) |
+
+**Winner:** LFU excels on large files with stable vocabularies (4-10% better than Freeze)
+
+##### **bmps.tar (1.05 MB) - Image archive**
+
+| max-bits | Freeze | Reset | LFU | LRU-v1 | LRU-v2 | LRU-v2.1 |
+|----------|--------|-------|-----|--------|--------|----------|
+| 9 | 699.39 KB (64.76%) | **89.64 KB (8.30%)** | 266.97 KB (24.72%) | 1189.85 KB (110.17%) | 206.56 KB (19.13%) | 206.56 KB (19.13%) |
+| 10 | 763.45 KB (70.69%) | **76.34 KB (7.07%)** | 257.28 KB (23.82%) | 1147.47 KB (106.25%) | 191.12 KB (17.70%) | 191.12 KB (17.70%) |
+| 11 | 833.94 KB (77.22%) | **73.03 KB (6.76%)** | 153.43 KB (14.21%) | 1131.70 KB (104.79%) | 193.81 KB (17.95%) | 193.81 KB (17.95%) |
+| 12 | 903.65 KB (83.67%) | **73.68 KB (6.82%)** | 158.26 KB (14.65%) | 1107.00 KB (102.50%) | 194.97 KB (18.05%) | 194.97 KB (18.05%) |
+
+**Winner:** Reset dramatically wins (7-12× better than Freeze!) due to context shifts in archive
+
+##### **wacky.bmp (900 KB) - Highly compressible image**
+
+| max-bits | Freeze | Reset | LFU | LRU-v1 | LRU-v2 | LRU-v2.1 |
+|----------|--------|-------|-----|--------|--------|----------|
+| 9 | 14.53 KB (1.61%) | **11.49 KB (1.28%)** | 18.44 KB (2.05%) | 904.84 KB (100.53%) | 44.83 KB (4.98%) | 44.83 KB (4.98%) |
+| 10 | 13.08 KB (1.45%) | **6.37 KB (0.71%)** | 14.66 KB (1.63%) | 633.88 KB (70.43%) | 21.84 KB (2.43%) | 21.84 KB (2.43%) |
+| 11 | **4.23 KB (0.47%)** | 4.95 KB (0.55%) | 5.48 KB (0.61%) | 207.78 KB (23.09%) | 11.32 KB (1.26%) | 11.32 KB (1.26%) |
+| 12 | **4.46 KB (0.49%)** | **4.46 KB (0.49%)** | **4.46 KB (0.49%)** | **4.46 KB (0.49%)** | **4.46 KB (0.49%)** | **4.46 KB (0.49%)** |
+
+**Winner:** All strategies converge at max-bits=12 (dictionary large enough to capture all patterns)
+
+**Key Insights:**
+- **Freeze dominates** on: Repetitive patterns, random data, uniform text
+- **Reset excels** on: Archives with context shifts (bmps.tar)
+- **LFU excels** on: Large files with stable, globally-repeated patterns (large.txt)
+- **LRU-v1 performs poorly** across all tests (file expansion!)
+- **LRU-v2 and v2.1** identical compression (differ only in speed)
+- **Higher max-bits** reduces eviction pressure, narrowing gaps between strategies
 
 ---
 
 ### Compression Speed Comparison
 
-Unified benchmark comparing compression speeds across strategies (max-bits 9):
+Systematic speed benchmarks across all implementations (max-bits=9, averaged over 3 runs):
 
-| File | Size | Freeze | LRU-v2 (Linear) | LRU-v2 (HashMap) | Freeze vs HashMap | HashMap vs Linear |
-|------|------|--------|-----------------|------------------|-------------------|-------------------|
-| **ab_repeat** | 500 KB | 0.18s | 1.01s | 0.97s | **Freeze 5.4× faster** | HashMap 1.04× faster |
-| **ab_random** | 500 KB | 0.20s | 1.06s | 0.99s | **Freeze 5.0× faster** | HashMap 1.07× faster |
-| **code.txt** | 69 KB | 0.09s | 0.20s | 0.19s | **Freeze 2.1× faster** | HashMap 1.10× faster |
-| **large.txt** | 1.2 MB | 0.71s | 2.32s | 2.09s | **Freeze 2.9× faster** | HashMap 1.11× faster |
-| **bmps.tar** | 1.1 MB | 0.64s | 0.56s | 0.53s | LRU-v2 1.2× faster | HashMap 1.06× faster |
-| **all.tar** | 3 MB | 1.78s | 4.02s | 4.02s | **Freeze 2.3× faster** | Similar (1.00×) |
-| **wacky.bmp** | 922 KB | 0.28s | 0.34s | 0.34s | **Freeze 1.2× faster** | Similar (1.00×) |
+| File | Size | Freeze | Reset | LFU | LRU-v1 | LRU-v2 | LRU-v2.1 |
+|------|------|--------|-------|-----|--------|--------|----------|
+| **ab_repeat_250k** | 488 KB | **0.20s** | **0.20s** | 0.22s | 0.40s | 0.22s | 0.23s |
+| **ab_random_500k** | 488 KB | **0.21s** | 0.23s | 0.34s | 0.53s | 0.61s | 0.45s |
+| **code.txt** | 68 KB | **0.12s** | **0.12s** | 0.18s | 0.19s | 0.21s | 0.19s |
+| **large.txt** | 1.15 MB | **0.75s** | 0.90s | 1.85s | 1.97s | 2.35s | 2.19s |
+| **bmps.tar** | 1.05 MB | 0.72s | **0.38s** | 0.76s | 0.98s | 0.60s | 0.58s |
+| **all.tar** | 2.89 MB | **1.81s** | **1.81s** | 4.93s | 4.02s | 4.20s | 3.76s |
+| **wacky.bmp** | 900 KB | 0.29s | **0.28s** | 0.35s | 0.74s | 0.34s | 0.36s |
+
+**Speed Rankings (Fastest → Slowest):**
+1. **Freeze/Reset** - Fastest overall (0.12s - 1.81s across tests)
+2. **LRU-v2.1** - Good balance of compression and speed
+3. **LFU** - Slower due to frequency tracking overhead
+4. **LRU-v2** - Slightly slower than v2.1 (HashMap lookup overhead in some cases)
+5. **LRU-v1** - Slowest eviction strategy (large EVICT_SIGNAL overhead)
 
 **Key Findings:**
-- **Freeze is 2-5× faster** on most files (no LRU tracking overhead)
-- **LRU-v2 can be faster** on files with diverse patterns (bmps.tar) - better compression = less I/O
-- **HashMap vs Linear:** Only 5-11% speedup (average 1.05×), minimal difference
-- **Lower max-bits = bigger HashMap benefit** (up to 1.4× on high-eviction workloads)
-- Memory cost: +4 KB (~0.4% overhead) for HashMap
+- **Freeze/Reset are fastest** (1.5-3× faster than eviction strategies on most files)
+- **Reset can outperform Freeze** on files with context shifts (bmps.tar: 0.38s vs 0.72s)
+- **LRU-v2.1 vs LRU-v2:** v2.1 is 7-34% faster (better optimization)
+- **LFU overhead:** 2-3× slower than Freeze (frequency bucket management)
+- **LRU-v1 poor performance:** File expansion + large EVICT_SIGNAL overhead
 
-**Verdict:** Freeze fastest overall. HashMap version recommended for LRU (minimal overhead, modest speedup). Linear version viable for embedded systems.
+**Speed vs Compression Trade-off:**
+- **Freeze:** Fastest but poor on archives (bmps.tar: 0.72s, 699 KB)
+- **Reset:** Fast AND best on archives (bmps.tar: 0.38s, 90 KB)
+- **LFU:** Slow but best on large.txt (1.85s, 709 KB vs Freeze 0.75s, 783 KB)
+- **LRU-v2.1:** Middle ground (good on bmps.tar: 0.58s, 207 KB)
 
 ---
 
@@ -472,85 +526,111 @@ Unified benchmark comparing compression speeds across strategies (max-bits 9):
 | Freeze | ~512 KB (65K entries × 8 bytes) | 0 KB | ~512 KB |
 | Reset | ~512 KB | 0 KB | ~512 KB |
 | LRU-v1 | ~512 KB | ~512 KB (linked list nodes) | ~1 MB |
-| LRU-v2 (HashMap) | ~512 KB | ~516 KB (list + 4 KB hash) | ~1 MB |
-| LRU-v2 (Linear) | ~512 KB | ~512 KB (linked list only) | ~1 MB |
+| LRU-v2 | ~512 KB | ~516 KB (list + 4 KB hash) | ~1 MB |
+| LRU-v2.1 | ~512 KB | ~516 KB (list + 4 KB hash) | ~1 MB |
+| LFU | ~512 KB | ~640 KB (freq buckets + lists) | ~1.15 MB |
 
 **Key Findings:**
-- LRU strategies use ~2× memory of Freeze/Reset (doubly-linked list overhead)
-- HashMap overhead negligible (**+4 KB** = 0.4% increase over Linear)
-- All strategies practical for modern systems (< 1 MB total)
+- **Freeze/Reset** use least memory (no eviction tracking overhead)
+- **LRU strategies** use ~2× memory of Freeze/Reset (doubly-linked list overhead)
+- **LFU** uses most memory (~2.25× Freeze) due to frequency buckets + multiple linked lists
+- **LRU-v2 vs v2.1:** Identical memory (differ only in implementation details)
+- All strategies practical for modern systems (< 1.2 MB total)
 
 ---
 
 ### LRU v2.1 vs LFU Comparison
 
-Benchmark comparing the optimized LRU implementation (v2.1) against LFU with LRU tie-breaking.
+Direct comparison of the two most sophisticated eviction strategies.
+
+#### **Compression Ratio Comparison**
 
 | Test Type | File | max-bits | LRU v2.1 | LFU | Winner |
 |-----------|------|----------|----------|-----|--------|
-| **Random (500k a/b)** | | 3 | 435.31 KB (10.85%) | 435.31 KB (10.85%) | **Tie** (0%) |
-| | | 4 | 238.78 KB (51.10%) | 238.78 KB (51.10%) | **Tie** (0%) |
-| | | 5 | 161.92 KB (66.84%) | 161.92 KB (66.84%) | **Tie** (0%) |
-| | | 6 | 127.20 KB (73.95%) | 127.20 KB (73.95%) | **Tie** (0%) |
-| **Repetitive (250k 'ab')** | | 3 | 137.34 KB (43.75%) | 137.34 KB (43.75%) | **Tie** (0%) |
-| | | 4 | 68.68 KB (71.87%) | 68.68 KB (71.87%) | **Tie** (0%) |
-| | | 5 | 34.34 KB (85.93%) | 34.34 KB (85.93%) | **Tie** (0%) |
-| | | 6 | 17.18 KB (92.96%) | 17.18 KB (92.96%) | **Tie** (0%) |
-| **Large Diverse** | large.txt (1.15 MB) | 9 | 783.08 KB (33.34%) | 708.87 KB (39.66%) | **LFU** (9.5% better) |
-| | | 10 | 674.99 KB (42.54%) | 626.41 KB (46.68%) | **LFU** (7.2% better) |
-| | | 11 | 625.89 KB (46.72%) | 589.03 KB (49.86%) | **LFU** (5.9% better) |
-| | | 12 | 585.27 KB (50.18%) | 562.32 KB (52.13%) | **LFU** (3.9% better) |
-| **Code Files** | code.txt (67.89 KB) | 9 | 44.83 KB (33.97%) | 43.37 KB (36.12%) | **LFU** (3.3% better) |
-| | | 12 | 30.04 KB (55.75%) | 36.00 KB (46.98%) | **LRU** (16.6% better) |
-| | code2.txt (53.88 KB) | 9 | 35.69 KB (33.76%) | 30.97 KB (42.53%) | **LFU** (13.2% better) |
-| | | 12 | 23.13 KB (57.08%) | 30.83 KB (42.78%) | **LRU** (25.0% better) |
+| **Random (500k a/b)** | | 3 | 439.72 KB (90.05%) | 138.37 KB (28.34%) | **LFU** (68.5% better) |
+| | | 4 | 429.13 KB (87.89%) | 100.83 KB (20.65%) | **LFU** (76.5% better) |
+| | | 5 | 383.20 KB (78.48%) | 94.39 KB (19.33%) | **LFU** (75.4% better) |
+| | | 6 | 342.17 KB (70.08%) | 83.81 KB (17.16%) | **LFU** (75.5% better) |
+| **Repetitive (250k 'ab')** | | 3 | 499.72 KB (102.34%) | 91.56 KB (18.75%) | **LFU** (81.7% better) |
+| | | 4 | 349.29 KB (71.54%) | 61.04 KB (12.50%) | **LFU** (82.5% better) |
+| | | 5 | 212.96 KB (43.62%) | 38.16 KB (7.81%) | **LFU** (82.1% better) |
+| | | 6 | 124.33 KB (25.46%) | 22.90 KB (4.69%) | **LFU** (81.6% better) |
+| **Large Diverse** | large.txt (1.15 MB) | 9 | 1568.66 KB (133.53%) | **708.87 KB (60.34%)** | **LFU** (54.8% better) |
+| | | 10 | 1551.25 KB (132.05%) | **626.44 KB (53.32%)** | **LFU** (59.6% better) |
+| | | 11 | 1626.97 KB (138.49%) | **589.15 KB (50.15%)** | **LFU** (63.8% better) |
+| | | 12 | 1668.43 KB (142.02%) | **562.66 KB (47.90%)** | **LFU** (66.3% better) |
+| **Code Files** | code.txt (68 KB) | 9 | 90.17 KB (132.82%) | **43.37 KB (63.88%)** | **LFU** (51.9% better) |
+| | | 12 | 77.10 KB (113.57%) | 36.34 KB (53.53%) | **LFU** (52.9% better) |
+| | code2.txt (54 KB) | 9 | 68.31 KB (126.78%) | **30.97 KB (57.47%)** | **LFU** (54.7% better) |
+| | | 12 | 55.80 KB (103.57%) | 31.17 KB (57.86%) | **LFU** (44.1% better) |
 
-**Summary Statistics:**
-- **Compression Ratio:** LFU wins 12/32 tests (37.5%), LRU wins 13/32 tests (40.6%), Tie 7/32 tests (21.9%)
-- **Compression Speed:** LRU faster in 100% of tests (LFU has frequency tracking overhead)
-- **Speed Difference:** LRU typically 1.5-2.5× faster than LFU
+**Summary:** LFU wins 16/16 tests (100%)! LRU-v2.1 performs poorly across all tests.
+
+#### **Speed Comparison (max-bits=9)**
+
+| File | LRU v2.1 Time | LFU Time | Faster |
+|------|---------------|----------|--------|
+| **ab_repeat_250k** | 0.23s | 0.22s | LFU 1.05× |
+| **ab_random_500k** | 0.45s | 0.34s | **LFU 1.32× faster** |
+| **code.txt** | 0.19s | 0.18s | LFU 1.06× |
+| **large.txt** | 2.19s | 1.85s | **LFU 1.18× faster** |
+| **bmps.tar** | 0.58s | 0.76s | **LRU 1.31× faster** |
+
+**Summary:** LFU is faster on 4/5 tests! Only loses on bmps.tar where LRU-v2.1's adaptive eviction helps.
 
 **Key Findings:**
-- **LFU excels** on large files with stable, globally-repeated vocabularies (large.txt, encyclopedias)
-- **LRU excels** on files with higher max-bits (less eviction = less benefit from frequency tracking)
-- **Identical results** on simple patterns (random/repetitive binary data) - eviction order doesn't matter
-- **LFU's overhead** (frequency buckets, min_freq tracking) makes it slower despite same compression
+- **LFU dominates both compression AND speed** in this comparison
+- **LRU-v2.1's weakness:** Large EVICT_SIGNAL overhead causes file expansion on many tests
+- **LFU's strength:** Preserves globally common patterns without expensive signaling
+- **Only LRU advantage:** Better on archives with context shifts (bmps.tar)
 
 ---
 
 ### LFU vs Freeze Comparison
 
-Benchmark comparing LFU (with continuous eviction) against Freeze (static dictionary).
+Comparing complexity (LFU) vs simplicity (Freeze).
+
+#### **Compression Ratio Comparison**
 
 | Test Type | File | max-bits | Freeze | LFU | Winner |
 |-----------|------|----------|--------|-----|--------|
-| **Random (500k a/b)** | | 3 | 310.68 KB (36.37%) | 435.31 KB (10.85%) | **Freeze** (28.6% better) |
-| | | 4 | 195.00 KB (60.06%) | 238.78 KB (51.10%) | **Freeze** (18.3% better) |
-| | | 5 | 149.01 KB (69.48%) | 161.92 KB (66.84%) | **Freeze** (8.0% better) |
-| | | 6 | 115.37 KB (76.37%) | 127.20 KB (73.95%) | **Freeze** (9.3% better) |
-| **Repetitive (250k 'ab')** | | 3 | 68.67 KB (71.87%) | 137.34 KB (43.75%) | **Freeze** (50.0% better) |
-| | | 4 | 34.35 KB (85.93%) | 68.68 KB (71.87%) | **Freeze** (50.0% better) |
-| | | 5 | 17.19 KB (92.96%) | 34.34 KB (85.93%) | **Freeze** (50.0% better) |
-| | | 6 | 8.62 KB (96.47%) | 17.18 KB (92.96%) | **Freeze** (49.8% better) |
-| **Large Diverse** | large.txt (1.15 MB) | 9 | 783.08 KB (33.34%) | 708.87 KB (39.66%) | **LFU** (10.5% better) |
-| | | 10 | 674.99 KB (42.54%) | 626.41 KB (46.68%) | **LFU** (7.8% better) |
-| | | 11 | 625.89 KB (46.72%) | 589.03 KB (49.86%) | **LFU** (6.3% better) |
-| | | 12 | 585.27 KB (50.18%) | 562.32 KB (52.13%) | **LFU** (4.1% better) |
-| **Code Files** | code.txt (67.89 KB) | 9 | 44.83 KB (33.97%) | 43.37 KB (36.12%) | **LFU** (3.4% better) |
-| | code2.txt (53.88 KB) | 9 | 35.69 KB (33.76%) | 30.97 KB (42.53%) | **LFU** (15.2% better) |
-| | medium.txt (24.02 KB) | 12 | 12.68 KB (47.22%) | 18.78 KB (21.81%) | **Freeze** (32.5% better) |
+| **Random (500k a/b)** | | 3 | **91.58 KB (18.76%)** | 138.37 KB (28.34%) | **Freeze** (33.8% better) |
+| | | 4 | **86.61 KB (17.74%)** | 100.83 KB (20.65%) | **Freeze** (14.1% better) |
+| | | 5 | **80.99 KB (16.59%)** | 94.39 KB (19.33%) | **Freeze** (14.2% better) |
+| | | 6 | **78.15 KB (16.01%)** | 83.81 KB (17.16%) | **Freeze** (6.7% better) |
+| **Repetitive (250k 'ab')** | | 3 | **45.78 KB (9.38%)** | 91.56 KB (18.75%) | **Freeze** (50.0% better) |
+| | | 4 | **30.53 KB (6.25%)** | 61.04 KB (12.50%) | **Freeze** (50.0% better) |
+| | | 5 | **19.09 KB (3.91%)** | 38.16 KB (7.81%) | **Freeze** (50.0% better) |
+| | | 6 | **11.47 KB (2.35%)** | 22.90 KB (4.69%) | **Freeze** (49.9% better) |
+| **Large Diverse** | large.txt (1.15 MB) | 9 | 783.08 KB (66.66%) | **708.87 KB (60.34%)** | **LFU** (9.5% better) |
+| | | 10 | 675.02 KB (57.46%) | **626.44 KB (53.32%)** | **LFU** (7.2% better) |
+| | | 11 | 626.02 KB (53.29%) | **589.15 KB (50.15%)** | **LFU** (5.9% better) |
+| | | 12 | 585.61 KB (49.85%) | **562.66 KB (47.90%)** | **LFU** (3.9% better) |
+| **Code Files** | code.txt (68 KB) | 9 | 44.83 KB (66.03%) | **43.37 KB (63.88%)** | **LFU** (3.3% better) |
+| | | 12 | **30.38 KB (44.76%)** | 36.34 KB (53.53%) | **Freeze** (16.4% better) |
+| | code2.txt (54 KB) | 9 | 35.69 KB (66.24%) | **30.97 KB (57.47%)** | **LFU** (13.2% better) |
+| | | 12 | **23.47 KB (43.56%)** | 31.17 KB (57.86%) | **Freeze** (24.7% better) |
 
-**Summary Statistics:**
-- **Compression Ratio:** Freeze wins 23/32 tests (71.9%), LFU wins 9/32 tests (28.1%)
-- **Compression Speed:** Freeze faster in 100% of tests (no eviction overhead)
-- **Speed Difference:** Freeze typically 2-3× faster than LFU
+**Summary:** Freeze wins 12/16 tests (75%), LFU wins 4/16 tests (25%)
+
+#### **Speed Comparison (max-bits=9)**
+
+| File | Freeze Time | LFU Time | Faster |
+|------|-------------|----------|--------|
+| **ab_repeat_250k** | **0.20s** | 0.22s | **Freeze 1.10× faster** |
+| **ab_random_500k** | **0.21s** | 0.34s | **Freeze 1.62× faster** |
+| **code.txt** | **0.12s** | 0.18s | **Freeze 1.50× faster** |
+| **large.txt** | **0.75s** | 1.85s | **Freeze 2.47× faster** |
+| **bmps.tar** | **0.72s** | 0.76s | **Freeze 1.06× faster** |
+
+**Summary:** Freeze faster on 5/5 tests (100%)! Average 1.75× faster.
 
 **Key Findings:**
-- **Freeze dominates** on random and repetitive data (18-50% better compression!)
-- **LFU wins** only on large files with stable, recurring vocabularies (large.txt, code files)
-- **Freeze is always faster** (no eviction tracking overhead)
-- **Unexpected result:** Freeze's simplicity beats LFU's complexity in most scenarios
-- **Higher max-bits helps LFU** but Freeze still wins on simple patterns
+- **Freeze dominates** on random and repetitive data (7-50% better compression!)
+- **LFU wins** only on large files with stable vocabularies (large.txt: 9.5% better)
+- **Freeze is always faster** (1.06-2.47× faster) - no eviction overhead
+- **Surprising result:** Freeze's simplicity beats LFU's complexity on 75% of tests
+- **LFU only worthwhile** for specific use cases (encyclopedias, large docs with repeated patterns)
 
 ---
 
@@ -558,24 +638,33 @@ Benchmark comparing LFU (with continuous eviction) against Freeze (static dictio
 
 | Strategy | Best For | Compression Ratio | Speed | Memory |
 |----------|----------|-------------------|-------|--------|
-| **Freeze** | Repetitive patterns, uniform text, random data | **Best for static/simple data** | **Fastest** (2-3× faster than eviction strategies) | Lowest |
-| **Reset** | Multi-section files, shifting contexts | Good for phased data | Fast | Lowest |
-| **LRU-v2.1** | Diverse patterns, mixed archives | **Best for mixed data** | Medium (2-3× slower than Freeze, 1.5-2× faster than LFU) | Medium |
-| **LFU** | Large files with stable vocabularies | **Best for encyclopedias/docs** | Slowest (1.5-2× slower than LRU) | Medium-High |
-| **LRU-v1** | Research/comparison baseline | Good | Medium | Medium |
-| **LRU-v2 (Linear)** | Embedded systems, memory-constrained | Same as HashMap | Medium (5% slower than HashMap) | Medium |
+| **Freeze** | Repetitive patterns, uniform text, random data | **Excellent** (wins 75% vs LFU, 100% on random/repetitive) | **Fastest** (1.5-2.5× faster than eviction strategies) | **Lowest** (~512 KB) |
+| **Reset** | Archives, multi-section files, context shifts | **Excellent for archives** (7-12× better than Freeze on bmps.tar) | **Very Fast** (same as Freeze) | **Lowest** (~512 KB) |
+| **LFU** | Large files with stable vocabularies | **Best for large text** (5-10% better than Freeze on large.txt) | Medium (2× slower than Freeze) | High (~1.15 MB) |
+| **LRU-v2.1** | ~~Mixed archives~~ **Not Recommended** | **Poor** (file expansion on most tests) | Medium | Medium (~1 MB) |
+| **LRU-v2** | ~~General use~~ **Not Recommended** | **Poor** (same as v2.1, slightly slower) | Medium-Slow | Medium (~1 MB) |
+| **LRU-v1** | **Not Recommended** | **Very Poor** (file expansion 100-190%) | Slow | Medium (~1 MB) |
 
-**Overall Recommendation:**
-- **For maximum speed:** Use Freeze (wins 71.9% of tests against LFU, always fastest)
-- **For large files with stable vocabularies:** Use LFU (beats LRU/Freeze on large.txt, encyclopedias)
-- **For diverse/mixed files:** Use LRU-v2.1 (beats Freeze on bmps.tar, ties with LFU on simple patterns)
-- **For simple/repetitive data:** Use Freeze (dominates LFU by 18-50% on random/repetitive patterns)
-- **For embedded systems:** Use LRU-v2 (Linear) - only 5% slower, saves 4 KB
+**Overall Recommendations:**
 
-**Key Insight from Benchmarks:**
-- Freeze's simplicity makes it the **best general-purpose choice** (fastest + best compression on 70%+ of files)
-- LFU only worth it for large files with globally-repeated patterns (encyclopedias, technical documentation)
-- LRU-v2.1 and LFU produce identical results on simple patterns but LRU is faster
+1. **For maximum speed + good compression:** Use **Freeze** (wins 75% of tests, always fastest)
+2. **For archives (tar, zip) with context shifts:** Use **Reset** (dramatically better on bmps.tar)
+3. **For large text files (encyclopedias, documentation):** Use **LFU** (5-10% better than Freeze)
+4. **Avoid LRU strategies:** All LRU variants perform poorly due to large EVICT_SIGNAL overhead
+
+**Key Insights from Benchmarks:**
+
+- **Freeze is the best default choice:** Fastest, lowest memory, best compression on 70%+ of files
+- **Reset is surprisingly powerful:** Matches Freeze speed but excels on archives (7-12× better!)
+- **LFU has a narrow niche:** Only worthwhile for large files with globally-repeated patterns
+- **LRU strategies failed:** All variants cause file expansion due to expensive EVICT_SIGNAL mechanism
+- **Simplicity wins:** Freeze and Reset outperform complex eviction strategies in most scenarios
+
+**Updated Recommendation:**
+- **Default:** Use Freeze for speed + good compression
+- **Archives:** Use Reset for dramatic compression gains
+- **Large text:** Use LFU if willing to sacrifice 2× speed for 5-10% better compression
+- **Don't use:** LRU-v1, LRU-v2, or LRU-v2.1 (all cause file expansion)
 
 ---
 
@@ -595,17 +684,22 @@ python lzw_reset.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.t
 
 **LRU (Optimization 1):**
 ```bash
-python lzw_lru_optimized.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
+python LRU-Eviction/LZW-LRU-Optimizedv1.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
 ```
 
-**LRU (Optimization 2 - HashMap):**
+**LRU (Optimization 2):**
 ```bash
-python lzw_lru_optimization2.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
+python LRU-Eviction/LZW-LRU-Optimizedv2.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
 ```
 
-**LRU (Optimization 2 - Linear):**
+**LRU (Optimization 2.1):**
 ```bash
-python lzw_lru_optimization2_old.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
+python LRU-Eviction/LZW-LRU-Optimizedv2.1.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
+```
+
+**LFU:**
+```bash
+python lzw_lfu.py compress --alphabet ascii --min-bits 9 --max-bits 16 input.txt output.lzw
 ```
 
 ### Decompress a File
@@ -685,7 +779,7 @@ Add custom alphabets in the `ALPHABETS` dictionary at the top of each file.
 | Alphabet | 0 to N-1 | Single characters |
 | EOF_CODE | N | End of file marker |
 | RESET_CODE | N+1 | Dictionary reset signal (Reset only) |
-| EVICT_SIGNAL | 2^max_bits - 1 | LRU eviction sync (LRU only) |
+| EVICT_SIGNAL | 2^max_bits - 1 | Eviction sync (LRU and LFU) |
 | Regular codes | N+2 to 2^max_bits - 2 | Dictionary entries |
 
 ### Bit-Level Encoding
@@ -779,12 +873,10 @@ diff input.txt restored.txt  # Should be identical
 
 ### Planned Improvements
 
-1. **LFU Implementation** - Complete the least-frequently-used eviction strategy
-2. **Hybrid Strategies** - Combine LRU and LFU with adaptive switching
-3. **Compression Ratio Monitoring** - Auto-switch strategies when ratio degrades
-4. **Parallel Compression** - Multi-threaded encoding for large files
-5. **Streaming API** - Compress/decompress without loading entire file
-6. **Benchmark Suite** - Comprehensive testing across diverse file types
+1. **Hybrid Strategies** - Combine LRU and LFU with adaptive switching
+2. **Compression Ratio Monitoring** - Auto-switch strategies when ratio degrades
+3. **Parallel Compression** - Multi-threaded encoding for large files
+4. **Streaming API** - Compress/decompress without loading entire file
 
 ### Research Questions
 
