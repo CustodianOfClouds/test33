@@ -598,9 +598,8 @@ def decompress(input_file, output_file):
     code_bits = min_bits
     threshold = 1 << code_bits
 
-    # LFU tracker for dictionary codes (NOT alphabet codes)
-    # Tracks only multi-character sequences added during decompression
-    lfu_tracker = LFUTracker()
+    # NOTE: Decoder does NOT need LFU tracker!
+    # Encoder sends EVICT_SIGNAL telling decoder exactly which code to evict and the new value
 
     # Output history for offset-based reconstruction
     OUTPUT_HISTORY_SIZE = 255
@@ -687,15 +686,8 @@ def decompress(input_file, output_file):
                     entry_length = reader.read(16)
                     new_entry = ''.join(chr(reader.read(8)) for _ in range(entry_length))
 
-                # Remove old entry from LFU tracker (if it's a dictionary entry)
-                if evicted_code in dictionary and evicted_code >= alphabet_size + 1:
-                    old_entry = dictionary[evicted_code]
-                    if old_entry is not None:
-                        lfu_tracker.remove(evicted_code)
-
-                # Add new entry at the evicted code position
+                # Add new entry at the evicted code position (EVICT_SIGNAL tells us exactly what to do)
                 dictionary[evicted_code] = new_entry
-                lfu_tracker.use(evicted_code)
 
                 # Skip dictionary addition on next iteration
                 skip_next_addition = True
@@ -725,34 +717,18 @@ def decompress(input_file, output_file):
             if len(output_history) > OUTPUT_HISTORY_SIZE:
                 output_history.pop(0)
 
-            # Add new entry to dictionary (mirror encoder's logic)
+            # Add new entry to dictionary (NO eviction logic needed - EVICT_SIGNAL handles everything!)
             # Skip if previous iteration received EVICT_SIGNAL
-            if not skip_next_addition: 
+            if not skip_next_addition:
                 if next_code < EVICT_SIGNAL:
                     # Dictionary not full yet - add normally
                     new_entry = prev + current[0]
                     dictionary[next_code] = new_entry
-                    lfu_tracker.use(next_code)
                     next_code += 1
-                else:
-                    # Dictionary FULL - mirror encoder's LFU eviction
-                    lfu_code = lfu_tracker.find_lfu()
-                    if lfu_code is not None:
-                        # Remove old entry from dictionary and tracker
-                        del dictionary[lfu_code]
-                        lfu_tracker.remove(lfu_code)
-
-                        # Add placeholder entry at evicted code position
-                        dictionary[lfu_code] = None
-                        lfu_tracker.use(lfu_code)
+                # No else block - when dictionary is full, EVICT_SIGNAL tells us what to do!
 
             # Reset skip flag
             skip_next_addition = False
-
-            # Update LFU frequency for the codeword we just used (if it's a dictionary entry)
-            if codeword >= alphabet_size + 1 and codeword < EVICT_SIGNAL:
-                if codeword in dictionary:
-                    lfu_tracker.use(codeword)
 
             # Update previous string for next iteration
             prev = current

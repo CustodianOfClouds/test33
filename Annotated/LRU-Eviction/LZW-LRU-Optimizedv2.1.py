@@ -629,9 +629,8 @@ def decompress(input_file, output_file):
     code_bits = min_bits
     threshold = 1 << code_bits
 
-    # LRU tracker for dictionary entries (NOT alphabet entries)
-    # Mirrors encoder's LRU tracker to stay synchronized
-    lru_tracker = LRUTracker()
+    # NOTE: Decoder does NOT need LRU tracker!
+    # Encoder sends EVICT_SIGNAL telling decoder exactly which code to evict and the new value
 
     # OPTIMIZATION 2: Output history for offset-based reconstruction
     # Decoder uses direct indexing: output_history[-offset] which is O(1)
@@ -724,13 +723,8 @@ def decompress(input_file, output_file):
                     entry_length = reader.read(16)
                     new_entry = ''.join(chr(reader.read(8)) for _ in range(entry_length))
 
-                # Remove old entry from LRU tracker (if it's a dictionary entry)
-                if evicted_code in dictionary and evicted_code >= alphabet_size + 1:
-                    lru_tracker.remove(evicted_code)
-
-                # Add new entry at the evicted code position
+                # Add new entry at the evicted code position (EVICT_SIGNAL tells us exactly what to do)
                 dictionary[evicted_code] = new_entry
-                lru_tracker.use(evicted_code)
 
                 # Skip dictionary addition on next iteration
                 # Encoder already added an entry when it evicted
@@ -763,34 +757,18 @@ def decompress(input_file, output_file):
             if len(output_history) > OUTPUT_HISTORY_SIZE:
                 output_history.pop(0)  # Remove oldest from buffer
 
-            # Add new entry to dictionary (mirror encoder's logic)
+            # Add new entry to dictionary (NO eviction logic needed - EVICT_SIGNAL handles everything!)
             # Skip if previous iteration received EVICT_SIGNAL
-            if not skip_next_addition: 
+            if not skip_next_addition:
                 if next_code < EVICT_SIGNAL:
                     # Dictionary not full yet - add normally
                     new_entry = prev + current[0]
                     dictionary[next_code] = new_entry
-                    lru_tracker.use(next_code)
                     next_code += 1
-                else:
-                    # Dictionary FULL - mirror encoder's LRU eviction
-                    lru_code = lru_tracker.find_lru()
-                    if lru_code is not None:
-                        # Remove old entry from dictionary and tracker
-                        del dictionary[lru_code]
-                        lru_tracker.remove(lru_code)
-
-                        # Add placeholder entry at evicted code position
-                        dictionary[lru_code] = None
-                        lru_tracker.use(lru_code)
+                # No else block - when dictionary is full, EVICT_SIGNAL tells us what to do!
 
             # Reset skip flag
             skip_next_addition = False
-
-            # Update LRU for the codeword we just used (if it's a dictionary entry)
-            if codeword >= alphabet_size + 1 and codeword < EVICT_SIGNAL:
-                if codeword in dictionary:
-                    lru_tracker.use(codeword)
 
             # Update previous string for next iteration
             prev = current

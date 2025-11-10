@@ -315,8 +315,6 @@ def decompress(input_file, output_file):
     code_bits = min_bits
     threshold = 1 << code_bits
 
-    lru_tracker = LRUTracker()
-
     OUTPUT_HISTORY_SIZE = 255
     output_history = []
 
@@ -373,11 +371,7 @@ def decompress(input_file, output_file):
                     entry_length = reader.read(16)
                     new_entry = ''.join(chr(reader.read(8)) for _ in range(entry_length))
 
-                if evicted_code in dictionary and evicted_code >= alphabet_size + 1:
-                    lru_tracker.remove(evicted_code)
-
                 dictionary[evicted_code] = new_entry
-                lru_tracker.use(evicted_code)
 
                 skip_next_addition = True
 
@@ -400,22 +394,9 @@ def decompress(input_file, output_file):
                 if next_code < EVICT_SIGNAL:
                     new_entry = prev + current[0]
                     dictionary[next_code] = new_entry
-                    lru_tracker.use(next_code)
                     next_code += 1
-                else:
-                    lru_code = lru_tracker.find_lru()
-                    if lru_code is not None:
-                        del dictionary[lru_code]
-                        lru_tracker.remove(lru_code)
-
-                        dictionary[lru_code] = None
-                        lru_tracker.use(lru_code)
 
             skip_next_addition = False
-
-            if codeword >= alphabet_size + 1 and codeword < EVICT_SIGNAL:
-                if codeword in dictionary:
-                    lru_tracker.use(codeword)
 
             prev = current
 
