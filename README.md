@@ -194,19 +194,34 @@ In basic LZW, the decoder reconstructs the dictionary by watching the encoder's 
 - When encoder outputs a recently-evicted code, send a special **EVICT_SIGNAL** to tell the decoder the new value
 - Decoder updates its dictionary when it receives EVICT_SIGNAL
 
-This repository implements **two production-ready LRU versions** (v2 and v2.1) with compact EVICT_SIGNAL encoding:
-
-**Development Evolution:**
-- **Naive LRU** (`lzw_lru_naive.py`): Signals on every eviction → massive overhead, not practical
-- **Optimization 1** (`lzw_lru_optimized.py`): Signals only on evict-then-use pattern (~10-30% of evictions) → 70-90% signal reduction but still large signals (123 bits for 10-char entry), not recommended for production
-- **Optimization 2 (v2)** (`lzw_lru_optimization2.py`): Compact offset+suffix encoding → practical for real use ✓
-- **v2.1** (latest): Further optimizations → **recommended** ✓
-
-**Note:** Only v2 and v2.1 are viable for actual use. The naive and Opt1 implementations exist for educational purposes and to show the development progression.
+This repository implements **three versions of LRU** with progressively better optimizations:
 
 ---
 
-#### LRU v2: Output History with Offset+Suffix Encoding
+#### LRU Optimization 1: Evict-Then-Use Pattern Detection
+
+**Implementation:** `lzw_lru_optimized.py`
+
+**Key Insight:** Not all evictions need a signal!
+
+The decoder can reconstruct most evicted entries naturally by observing the output pattern. We only need EVICT_SIGNAL in the **evict-then-use** pattern:
+1. Encoder evicts code `C` (replaces its entry)
+2. Encoder **immediately outputs code `C`** with its new value
+
+This is surprisingly rare (~10-30% of evictions), achieving **70-90% reduction in signals** compared to naive full-signaling.
+
+**EVICT_SIGNAL Format:**
+```
+[EVICT_SIGNAL][code][entry_length][char1][char2]...[charN][code_again]
+```
+
+**Bit Cost:** 9-bit codes, 10-char entry = 9+9+16+80+9 = **123 bits**
+
+**Trade-off:** While this reduces signals dramatically, each signal is still large (123 bits for 10-char entry). **Not recommended for production** - use v2 or v2.1 instead.
+
+---
+
+#### LRU Optimization 2 (v2): Output History with Offset+Suffix Encoding
 
 **Implementations:**
 - `lzw_lru_optimization2.py` (HashMap version - O(1) lookup)
