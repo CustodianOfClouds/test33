@@ -188,23 +188,57 @@ if next_code >= max_codes:
 
 **Strategy:** When the dictionary fills up, evict the least recently used entry and reuse its code for the new pattern.
 
+**Implementation:** `Annotated/LRU-Eviction/LZW-LRU-Optimizedv2.1.py` (recommended), or see optimization versions below
+
 **Why LRU?** Recent patterns are more likely to repeat than old ones (principle of **locality of reference**). By keeping recently-used entries, the dictionary stays adapted to the current context.
 
-#### Core Challenge: Decoder Synchronization
+**How It Works:**
+```python
+# Track dictionary entries with LRU list (most recent at front)
+lru_tracker = LRUTracker()
 
-In basic LZW, the decoder reconstructs the dictionary by watching the encoder's output pattern. But with LRU eviction, there's a **synchronization problem:**
+if next_code < EVICT_SIGNAL:
+    dictionary[combined] = next_code
+    lru_tracker.use(combined)  # Mark as most recently used
+    next_code += 1
+else:
+    # Dictionary full - evict LRU entry
+    lru_entry = lru_tracker.find_lru()  # O(1) operation
+    lru_code = dictionary[lru_entry]
+    del dictionary[lru_entry]
+    dictionary[combined] = lru_code  # Reuse evicted code
+    lru_tracker.use(combined)
+```
 
-**The Problem:**
-1. Encoder evicts code `C` (replaces entry "abc" with new entry "xyz")
-2. Encoder later outputs code `C` (meaning "xyz")
-3. Decoder still thinks code `C` means "abc" → **DESYNC!**
+**Decoder Synchronization:**
+The decoder doesn't need to mirror encoder's eviction logic! Instead:
+- Encoder sends **EVICT_SIGNAL** when it evicts and immediately reuses a code (~10-30% of evictions)
+- EVICT_SIGNAL tells decoder exactly which code to update and the new value
+- Decoder just grows dictionary until full, then waits for EVICT_SIGNAL
 
-**The Solution:**
-- Track which codes were evicted
-- When encoder outputs a recently-evicted code, send a special **EVICT_SIGNAL** to tell the decoder the new value
-- Decoder updates its dictionary when it receives EVICT_SIGNAL
+This simplifies the decoder and eliminates tracking overhead.
 
-This repository implements **three versions of LRU** with progressively better optimizations:
+**Data Structure:**
+- **Doubly-linked list** for O(1) move-to-front and find-LRU operations
+- **HashMap** for O(1) entry lookup
+- Memory overhead: ~24 bytes per tracked entry (pointer overhead + HashMap entry)
+
+**Pros:**
+- Adapts to changing contexts (keeps recent patterns)
+- Excellent for files with locality of reference
+- O(1) eviction operations (no scanning required)
+- Simple decoder (no eviction tracking needed)
+
+**Cons:**
+- Doesn't preserve globally-common patterns from early in file
+- EVICT_SIGNAL overhead (~0.1-1% depending on optimization version)
+- More complex than Freeze/Reset
+
+**Best For:** Files with temporal locality (source code, natural language text, logs with repeating recent patterns)
+
+---
+
+**Optimization Versions:** This repository includes three progressively-optimized LRU implementations with different EVICT_SIGNAL strategies. See subsections below for details.
 
 ---
 
