@@ -41,17 +41,27 @@ A comprehensive implementation of LZW (Lempel-Ziv-Welch) compression in Python, 
 
 ### Example
 
-Input: `"ababababab"`
+Input: `"ababab"` (6 characters)
 
-| Step | Input | Dictionary Before | Output | Dictionary After |
-|------|-------|-------------------|--------|------------------|
-| 1    | a     | {0:'a', 1:'b'}    | 0      | {0:'a', 1:'b', 2:'ab'} |
-| 2    | ba    | {0:'a', 1:'b', 2:'ab'} | 1 | {0:'a', 1:'b', 2:'ab', 3:'ba'} |
-| 3    | ab    | {..., 3:'ba'}     | 2      | {..., 4:'aba'} |
-| 4    | aba   | {..., 4:'aba'}    | 4      | {..., 5:'abab'} |
-| 5    | ab    | {..., 5:'abab'}   | 2      | —  |
+| Step | Read | Current Phrase | Action | Output | New Entry |
+|------|------|----------------|--------|--------|-----------|
+| 1 | a | "a" | Match found | — | — |
+| 2 | b | "ab" | No match! | **0** (a) | 2:"ab" |
+| 3 | a | "ba" | No match! | **1** (b) | 3:"ba" |
+| 4 | b | "ab" | Match found! | — | — |
+| 5 | a | "aba" | No match! | **2** (ab) | 4:"aba" |
+| 6 | b | "ab" | Match found! | — | — |
+| EOF | — | "ab" | End of input | **2** (ab) | — |
 
-Compressed: `0, 1, 2, 4, 2` (5 codes instead of 10 characters)
+**Compressed output:** `[0, 1, 2, 2]` (4 codes instead of 6 characters)
+
+**Decompression verification:**
+- Code 0 → "a", output "a", add 2:"a"+"b"[0]="ab"
+- Code 1 → "b", output "b", add 3:"b"+"a"[0]="ba"
+- Code 2 → "ab", output "ab", add 4:"ab"+"a"[0]="aba"
+- Code 2 → "ab", output "ab"
+
+**Final output:** "a" + "b" + "ab" + "ab" = **"ababab"** ✓
 
 ### Variable-Width Encoding
 
