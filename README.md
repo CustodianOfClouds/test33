@@ -329,106 +329,43 @@ This check ensures data integrity by catching circular buffer bugs instead of si
 
 #### 4.1. LFU Tracking Data Structure with LRU Tie-Breaking
 
-The LFU implementation uses **frequency buckets + doubly-linked lists** for O(1) eviction:
+LFU uses **three data structures** for O(1) operations:
+
+1. **`key_to_node`**: HashMap mapping entries to nodes (O(1) lookup)
+2. **`freq_to_list`**: HashMap mapping frequencies to doubly-linked lists (O(1) bucket access)
+3. **`min_freq`**: Tracks the minimum frequency for fast LFU eviction (O(1) find)
 
 ```
-LFU Tracker Structure:
-┌──────────────────────────────────────────────────────────────┐
-│  key_to_node: HashMap (key → node, O(1) lookup)             │
-│  ┌────────┬────────┬────────┬────────┐                       │
-│  │  "ab"  │  "xyz" │  "ca"  │  ...   │                       │
-│  │   │    │   │    │   │    │        │                       │
-│  └───┼────┴───┼────┴───┼────┴────────┘                       │
-│      │        │        │                                      │
-│      ↓        ↓        ↓                                      │
-│  freq_to_list: Frequency Buckets (freq → doubly-linked list)│
-│                                                               │
-│  freq=1: [HEAD] ↔ [Node "xyz"] ↔ [Node "ca"] ↔ [TAIL]      │
-│                    ↑ MRU             ↑ LRU (EVICT THIS!)     │
-│                                                               │
-│  freq=2: [HEAD] ↔ [Node "ab"] ↔ [TAIL]                      │
-│                    ↑ MRU/LRU (only one)                       │
-│                                                               │
-│  freq=3: [HEAD] ↔ [TAIL] (empty)                            │
-│                                                               │
-│  min_freq: 1  (tracks minimum frequency bucket)              │
-└──────────────────────────────────────────────────────────────┘
+Structure Example (3 entries):
+  key_to_node: {"ab" → Node, "xyz" → Node, "ca" → Node}
 
-Operations:
-• use("ab"):       Move from freq=2 to freq=3, update to front of freq=3 list - O(1)
-• find_lfu():      Return tail.prev of min_freq bucket (LFU + LRU tie-breaking) - O(1)
-• remove("xyz"):   Delete from freq=1 list and HashMap - O(1)
+  freq_to_list:
+    freq=1: [HEAD] ↔ ["xyz"] ↔ ["ca"] ↔ [TAIL]  ← LRU order (evict "ca")
+    freq=2: [HEAD] ↔ ["ab"] ↔ [TAIL]
+
+  min_freq: 1
 ```
 
 **How it works:**
-- Each frequency level maintains a **doubly-linked list** in LRU order
-- When an entry is used, **increment its frequency** and move to the next bucket (at MRU position)
-- When eviction is needed:
-  1. Find the **min_freq** bucket (least frequently used)
-  2. Within that bucket, evict the **tail** entry (LRU tie-breaking)
-- This ensures globally popular entries stay in the dictionary
+- New entries start at freq=1 (MRU position in freq=1 list)
+- `use(entry)`: Move from freq=N to freq=N+1, update min_freq if needed (~20-25 ops)
+- `find_lfu()`: Return LRU entry in min_freq bucket (constant time)
+- **LRU tie-breaking:** Among entries with same frequency, evict the least recently used
 
-**Example sequence:**
-```
-Initial state: all entries start at freq=1
-
-freq=1: [HEAD] ↔ ["ab"] ↔ ["ba"] ↔ ["ca"] ↔ [TAIL]
-freq=2: (empty)
-min_freq = 1
-
-Use "ab" (increment freq 1→2):
-freq=1: [HEAD] ↔ ["ba"] ↔ ["ca"] ↔ [TAIL]
-freq=2: [HEAD] ↔ ["ab"] ↔ [TAIL]
-min_freq = 1 (still has entries)
-
-Use "ab" again (increment freq 2→3):
-freq=1: [HEAD] ↔ ["ba"] ↔ ["ca"] ↔ [TAIL]
-freq=2: (empty, remove from map)
-freq=3: [HEAD] ↔ ["ab"] ↔ [TAIL]
-min_freq = 1 (freq=1 bucket not empty, min_freq stays)
-
-Use "ba" (increment freq 1→2):
-freq=1: [HEAD] ↔ ["ca"] ↔ [TAIL]
-freq=2: [HEAD] ↔ ["ba"] ↔ [TAIL]
-freq=3: [HEAD] ↔ ["ab"] ↔ [TAIL]
-min_freq = 1
-
-Evict LFU: find_lfu() returns "ca" (freq=1, LRU in that bucket)
-```
-
-**Why LRU tie-breaking?**
-
-When multiple entries have the same frequency (e.g., all freq=1), we need a secondary criterion. Using **LRU tie-breaking** evicts the oldest unused entry among those with the same frequency, keeping more recently useful patterns even among rarely-used entries.
+**Why LRU tie-breaking?** Preserves recent patterns even among rarely-used entries.
 
 #### 4.2. Continuous Eviction with EVICT_SIGNAL
 
-LFU uses the **same EVICT_SIGNAL mechanism** as LRU for continuous eviction and decoder synchronization:
+LFU uses the **same EVICT_SIGNAL mechanism** as LRU:
 
-```
-Eviction Process:
-
-Step 1: Dictionary full, need to add "new_entry"
-├─ find_lfu() returns "old_entry" (freq=1, LRU in freq=1 bucket)
-├─ lfu_code = dictionary["old_entry"] = 512
-├─ Remove: del dictionary["old_entry"], lfu_tracker.remove("old_entry")
-├─ Reuse:  dictionary["new_entry"] = 512
-├─ Track:  evicted_codes[512] = ("new_entry", "new_entr")
-└─ Update: lfu_tracker.use("new_entry") → freq=1, MRU position
-
-Step 2: Later output code 512 (evict-then-use pattern)
-└─ Send EVICT_SIGNAL (same as LRU)
-
-Step 3: Continue evicting LFU entries as needed
-└─ next_code STAYS at EVICT_SIGNAL (continuous eviction)
-```
+**Eviction:** Find LFU entry (freq=1, LRU in bucket) → remove → reuse its code → track in evicted_codes → send EVICT_SIGNAL when outputting reused code
 
 **Shared Components** (identical to LRU):
-- **Output history buffer**: Circular buffer of last 255 outputs
-- **String-to-index HashMap**: For O(1) prefix lookup (encoder only)
-- **evicted_codes tracker**: Tracks codes evicted but not yet used
-- **EVICT_SIGNAL format**: Same compact offset+suffix encoding
+- Output history buffer (255 entries) + string_to_idx HashMap
+- evicted_codes tracker for evict-then-use synchronization
+- Compact offset+suffix encoding (fallback to full entry if prefix not in history)
 
-The only difference between LRU and LFU is **which entry gets evicted** (LRU vs LFU+LRU), but the synchronization mechanism is identical.
+**Key difference from LRU:** Evicts based on frequency (LFU+LRU tie-break) instead of recency (LRU only)
 
 **Pros:**
 - Preserves globally common patterns
@@ -438,10 +375,24 @@ The only difference between LRU and LFU is **which entry gets evicted** (LRU vs 
 
 **Cons:**
 - Can keep stale entries too long in shifting contexts
-- Slightly higher memory overhead (frequency tracking)
+- Higher memory overhead (frequency tracking + multiple lists)
 - More complex than LRU (requires min_freq maintenance)
+- **2-3× slower than LRU** due to constant factor overhead
 
 **Best For:** Files with globally-repeated patterns (documentation, structured logs, encyclopedias)
+
+**Performance Overhead Explanation:**
+
+While both LRU and LFU have O(1) `use()` operations, **constant factors matter**:
+
+- **LRU `use()`**: ~8 operations (remove from list + add to head)
+- **LFU `use()`**: ~20-25 operations (remove from freq=N list + update min_freq + add to freq=N+1 list + dict lookups)
+
+With 500k outputs, this becomes:
+- LRU: 500k × 8 = **4M operations**
+- LFU: 500k × 20 = **10M operations** → **2.5× slower**
+
+This overhead applies to **every output**, not just evictions, which is why LFU is consistently 1.5-2.5× slower than LRU across all file types (even when compression ratios are identical).
 
 ---
 
