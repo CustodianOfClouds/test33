@@ -475,7 +475,8 @@ Comprehensive benchmarks comparing all implementations across diverse file types
 
 **Key Insights:**
 - **Freeze dominates** on: Repetitive patterns, random data, uniform text
-- **Reset excels** on: Archives with context shifts (bmps.tar)
+- **Reset excels** on: Archives with context shifts (bmps.tar: 8× better than Freeze)
+- **LRU-v2.1 excels** on: Mixed archives (bmps.tar: 3.4× better than Freeze, beats LFU)
 - **LFU excels** on: Large files with stable, globally-repeated patterns (large.txt)
 - **LRU-v1 performs poorly** across all tests (file expansion!)
 - **LRU-v2 and v2.1** identical compression (differ only in speed)
@@ -564,7 +565,9 @@ Direct comparison of the two most sophisticated eviction strategies.
 | | code2.txt (54 KB) | 9 | 68.31 KB (126.78%) | **30.97 KB (57.47%)** | **LFU** (54.7% better) |
 | | | 12 | 55.80 KB (103.57%) | 31.17 KB (57.86%) | **LFU** (44.1% better) |
 
-**Summary:** LFU wins 16/16 tests (100%)! LRU-v2.1 performs poorly across all tests.
+**Summary:** Mixed results - each strategy has strengths:
+- **LFU wins:** AB tests (small alphabet), large.txt, code files (16/16 tests shown)
+- **LRU wins:** Archives (bmps.tar) - not shown in table above but see Extended ASCII Tests
 
 #### **Speed Comparison (max-bits=9)**
 
@@ -576,13 +579,14 @@ Direct comparison of the two most sophisticated eviction strategies.
 | **large.txt** | 2.19s | 1.85s | **LFU 1.18× faster** |
 | **bmps.tar** | 0.58s | 0.76s | **LRU 1.31× faster** |
 
-**Summary:** LFU is faster on 4/5 tests! Only loses on bmps.tar where LRU-v2.1's adaptive eviction helps.
+**Summary:** LFU faster on 4/5 tests, but LRU faster on the archive test.
 
 **Key Findings:**
-- **LFU dominates both compression AND speed** in this comparison
-- **LRU-v2.1's weakness:** Large EVICT_SIGNAL overhead causes file expansion on many tests
-- **LFU's strength:** Preserves globally common patterns without expensive signaling
-- **Only LRU advantage:** Better on archives with context shifts (bmps.tar)
+- **LFU excels:** Small alphabets, large uniform text, code files
+- **LRU excels:** Mixed archives (bmps.tar: 207 KB vs LFU 267 KB, 23% better!)
+- **Trade-off:** LFU better on uniform data, LRU better on diverse data
+- **AB tests misleading:** 2-char alphabet makes EVICT_SIGNAL overhead catastrophic for LRU
+- **Real-world (extended ASCII):** LRU competitive on archives, LFU better on text
 
 ---
 
@@ -638,33 +642,38 @@ Comparing complexity (LFU) vs simplicity (Freeze).
 
 | Strategy | Best For | Compression Ratio | Speed | Memory |
 |----------|----------|-------------------|-------|--------|
-| **Freeze** | Repetitive patterns, uniform text, random data | **Excellent** (wins 75% vs LFU, 100% on random/repetitive) | **Fastest** (1.5-2.5× faster than eviction strategies) | **Lowest** (~512 KB) |
-| **Reset** | Archives, multi-section files, context shifts | **Excellent for archives** (7-12× better than Freeze on bmps.tar) | **Very Fast** (same as Freeze) | **Lowest** (~512 KB) |
-| **LFU** | Large files with stable vocabularies | **Best for large text** (5-10% better than Freeze on large.txt) | Medium (2× slower than Freeze) | High (~1.15 MB) |
-| **LRU-v2.1** | ~~Mixed archives~~ **Not Recommended** | **Poor** (file expansion on most tests) | Medium | Medium (~1 MB) |
-| **LRU-v2** | ~~General use~~ **Not Recommended** | **Poor** (same as v2.1, slightly slower) | Medium-Slow | Medium (~1 MB) |
+| **Freeze** | Repetitive patterns, uniform text, random data | **Excellent** (wins on random/repetitive data) | **Fastest** (1.5-2.5× faster than eviction strategies) | **Lowest** (~512 KB) |
+| **Reset** | Archives, multi-section files, context shifts | **Best for archives** (8-77× better than Freeze on bmps.tar/wacky.bmp) | **Very Fast** (same as Freeze) | **Lowest** (~512 KB) |
+| **LRU-v2.1** | Mixed archives (when Reset unavailable) | **Second-best for archives** (3.4× better than Freeze on bmps.tar, beats LFU) | Medium-Fast | Medium (~1 MB) |
+| **LFU** | Large text files with stable vocabularies | **Best for large uniform text** (5-10% better than Freeze on large.txt) | Medium (2× slower than Freeze) | High (~1.15 MB) |
+| **LRU-v2** | (Same as v2.1, slightly slower) | Same as LRU-v2.1 | Medium-Slow | Medium (~1 MB) |
 | **LRU-v1** | **Not Recommended** | **Very Poor** (file expansion 100-190%) | Slow | Medium (~1 MB) |
 
 **Overall Recommendations:**
 
-1. **For maximum speed + good compression:** Use **Freeze** (wins 75% of tests, always fastest)
-2. **For archives (tar, zip) with context shifts:** Use **Reset** (dramatically better on bmps.tar)
-3. **For large text files (encyclopedias, documentation):** Use **LFU** (5-10% better than Freeze)
-4. **Avoid LRU strategies:** All LRU variants perform poorly due to large EVICT_SIGNAL overhead
+1. **For repetitive/uniform data:** Use **Freeze** (fastest, excellent compression)
+2. **For archives (tar, zip, mixed files):** Use **Reset** (best) or **LRU-v2.1** (second-best, 3.4× better than Freeze)
+3. **For large text files:** Use **LFU** (5-10% better than Freeze on large.txt)
+4. **Avoid:** LRU-v1 (causes severe file expansion)
 
 **Key Insights from Benchmarks:**
 
-- **Freeze is the best default choice:** Fastest, lowest memory, best compression on 70%+ of files
-- **Reset is surprisingly powerful:** Matches Freeze speed but excels on archives (7-12× better!)
-- **LFU has a narrow niche:** Only worthwhile for large files with globally-repeated patterns
-- **LRU strategies failed:** All variants cause file expansion due to expensive EVICT_SIGNAL mechanism
-- **Simplicity wins:** Freeze and Reset outperform complex eviction strategies in most scenarios
+**By File Type:**
+- **Archives (bmps.tar):** Reset (90 KB) > LRU-v2.1 (207 KB) > LFU (267 KB) > Freeze (699 KB)
+- **Large text (large.txt):** LFU (709 KB) > Freeze (783 KB) > Reset (900 KB) > LRU (1569 KB)
+- **Repetitive (ab_repeat):** Freeze (2.4 KB) > Reset (4.4 KB) > LFU (4.3 KB) > LRU (22 KB)
 
-**Updated Recommendation:**
-- **Default:** Use Freeze for speed + good compression
-- **Archives:** Use Reset for dramatic compression gains
-- **Large text:** Use LFU if willing to sacrifice 2× speed for 5-10% better compression
-- **Don't use:** LRU-v1, LRU-v2, or LRU-v2.1 (all cause file expansion)
+**Strategy Trade-offs:**
+- **Freeze:** Best default (fastest + good on most files), but poor on archives
+- **Reset:** Dominant on archives (7-77× better than Freeze), matches Freeze speed
+- **LRU-v2.1:** Strong on mixed files (3.4× better than Freeze on archives), fails on uniform text
+- **LFU:** Narrow niche (only large uniform text), 2× slower than Freeze
+
+**When LRU Works:**
+- ✓ Archives with diverse content (bmps.tar: 3.4× better than Freeze, beats LFU)
+- ✗ Large uniform text (file expansion: 133% vs Freeze 67%)
+- ✗ Small alphabets (catastrophic failure on AB tests)
+- ✗ Repetitive patterns (10× worse than Freeze)
 
 ---
 
