@@ -208,16 +208,34 @@ The decoder can reconstruct most evicted entries naturally by observing the outp
 1. Encoder evicts code `C` (replaces its entry)
 2. Encoder **immediately outputs code `C`** with its new value
 
-This is surprisingly rare (~10-30% of evictions), achieving **70-90% reduction in signals** compared to naive full-signaling.
+This is surprisingly rare (~10-30% of evictions).
 
-**EVICT_SIGNAL Format:**
+**EVICT_SIGNAL Format (Optimization 1):**
 ```
 [EVICT_SIGNAL][code][entry_length][char1][char2]...[charN][code_again]
 ```
 
-**Bit Cost:** 9-bit codes, 10-char entry = 9+9+16+80+9 = **123 bits**
+**Bit Cost:**
+- `code_bits` (EVICT_SIGNAL marker)
+- `code_bits` (which code was evicted)
+- 16 bits (entry length)
+- 8 × L bits (entry characters)
+- `code_bits` (repeat the code to actually emit it)
 
-**Trade-off:** While this reduces signals dramatically, each signal is still large (123 bits for 10-char entry). **Not recommended for production** - use v2 or v2.1 instead.
+**Example:** 9-bit codes, 10-char entry = 9+9+16+80+9 = **123 bits**
+
+**Signal Reduction:**
+- Naive approach: Signal on every eviction (~100% evictions)
+- Optimization 1: Signal only on evict-then-use (~10-30% evictions)
+- **Result: 70-90% reduction in signals!**
+- Benchmarks show **55-85% smaller output** vs naive across typical files
+
+**Data Structure:**
+- **Doubly-linked list** for LRU ordering (O(1) move-to-front)
+- **HashMap** for O(1) code lookup
+- Sentinel head/tail nodes to eliminate edge cases
+
+**Trade-off:** While this dramatically reduces signal frequency, each signal is still large (123 bits for 10-char entry). Overhead is noticeable on files with high eviction rates. **Not recommended for production** - use v2 or v2.1 instead.
 
 ---
 
