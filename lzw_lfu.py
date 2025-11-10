@@ -309,19 +309,33 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
     # Example: {'a': 0, 'b': 1} for alphabet ['a', 'b']
     dictionary = {char: i for i, char in enumerate(alphabet)}
 
-    # Reserve code for EOF (End Of File marker)
-    # If alphabet has 2 chars, EOF = 2, next available code = 3
+    # Reserve codes:
+    # - len(alphabet): EOF marker
+    # - len(alphabet)+1 to max_size-2: dictionary entries
+    # - max_size-1: EVICT_SIGNAL (special synchronization code)
     EOF_CODE = len(alphabet)
-    next_code = len(alphabet) + 1
+    max_size = 1 << max_bits            # Maximum dictionary size (2^max_bits)
+    EVICT_SIGNAL = max_size - 1         # Special signal for eviction
+    next_code = len(alphabet) + 1       # Next available code
 
     # Variable-width encoding parameters
     code_bits = min_bits                # Current bit width (starts at min_bits)
-    max_size = 1 << max_bits            # Maximum dictionary size (2^max_bits)
     threshold = 1 << code_bits          # When to increment bit width (2^code_bits)
 
     # LFU tracker for dictionary entries (NOT alphabet entries)
     # Tracks only multi-character sequences added during compression
     lfu_tracker = LFUTracker()
+
+    # Track evicted codes and their new values (for EVICT_SIGNAL optimization)
+    # Key: code that was evicted, Value: (full_entry, prefix_at_eviction_time)
+    evicted_codes = {}
+
+    # Output history with O(1) HashMap lookup (for compact offset+suffix format)
+    # Circular buffer of last 255 outputs
+    OUTPUT_HISTORY_SIZE = 255
+    output_history = []           # Circular buffer of recent outputs
+    history_start_idx = 0         # Absolute position of first element in buffer
+    string_to_idx = {}            # Maps string -> absolute position (O(1) lookup)
 
     # Read and compress file byte by byte (streaming for memory efficiency)
     # Binary mode to handle all file types correctly (text and binary)
@@ -367,39 +381,147 @@ def compress(input_file, output_file, alphabet_name, min_bits=9, max_bits=16):
             else:
                 # Phrase not in dictionary - output code and add new entry
 
+                # About to output code for current phrase
+                output_code = dictionary[current]
+
+                # Check if this code was evicted and is being reused
+                # This is the "evict-then-use" pattern that requires EVICT_SIGNAL
+                if output_code in evicted_codes:
+                    # Encoder is about to use a code that was evicted!
+                    # Decoder won't know the new value - SEND SIGNAL
+
+                    # Unpack stored entry and prefix
+                    entry, prefix = evicted_codes[output_code]
+
+                    # Compute suffix (character that extends prefix to entry)
+                    suffix = entry[len(prefix):]
+                    if len(suffix) != 1:
+                        raise ValueError(f"Logic error: suffix should be 1 char, got {len(suffix)}")
+
+                    # Try O(1) HashMap lookup for prefix position in output history
+                    # If prefix is in recent history, we can send compact offset+suffix format
+                    offset = None
+                    if prefix in string_to_idx:
+                        prefix_global_idx = string_to_idx[prefix]
+                        # Check if still in valid buffer range (circular buffer may have evicted it)
+                        if prefix_global_idx >= history_start_idx:
+                            # Calculate offset from end of current history
+                            current_end_idx = history_start_idx + len(output_history) - 1
+                            offset = current_end_idx - prefix_global_idx + 1
+
+                    if offset is not None:
+                        if offset > 255:
+                            raise ValueError(f"Bug in circular buffer: offset {offset} exceeds 255!")
+                        # Prefix found in recent history! Send compact EVICT_SIGNAL
+                        writer.write(EVICT_SIGNAL, code_bits)
+                        writer.write(output_code, code_bits)
+                        writer.write(offset, 8)       # 1 byte offset (1-255)
+                        writer.write(ord(suffix), 8)  # 1 byte suffix
+                    else:
+                        # Prefix not in recent history - fall back to full entry format
+                        writer.write(EVICT_SIGNAL, code_bits)
+                        writer.write(output_code, code_bits)
+                        writer.write(0, 8)            # offset=0 signals "full entry follows"
+                        writer.write(len(entry), 16)  # 16 bits for string length
+                        for c in entry:
+                            writer.write(ord(c), 8)   # 8 bits per character
+
+                    # Remove from evicted_codes since we've now synced it
+                    del evicted_codes[output_code]
+
                 # Output code for current phrase
-                writer.write(dictionary[current], code_bits)
+                writer.write(output_code, code_bits)
 
-                # Update LFU frequency if current phrase is tracked (not single char from alphabet)
+                # Add current output to history with O(1) HashMap tracking
+                current_global_idx = history_start_idx + len(output_history)
+                output_history.append(current)
+                string_to_idx[current] = current_global_idx
+
+                # Maintain circular buffer size (remove oldest when exceeds 255)
+                if len(output_history) > OUTPUT_HISTORY_SIZE:
+                    output_history.pop(0)
+                    history_start_idx += 1
+
+                # Update LFU if current phrase is tracked (not single char from alphabet)
                 if lfu_tracker.contains(current):
-                    lfu_tracker.use(current)  # Increment frequency
+                    lfu_tracker.use(current)
 
-                # Add new entry to dictionary if not full
-                if next_code < max_size:
+                # Add new entry to dictionary
+                if next_code < EVICT_SIGNAL:
+                    # Dictionary not full yet - add normally
+
                     # Check if we need to increase bit width
-                    # When next_code reaches threshold (512, 1024, etc.), we need more bits
                     if next_code >= threshold and code_bits < max_bits:
                         code_bits += 1
-                        threshold <<= 1  # Double threshold (bitshift left = multiply by 2)
+                        threshold <<= 1
 
-                    # LFU EVICTION: If dictionary is about to be full, evict LFU entry first
-                    # Uses LRU tie-breaking for entries with same frequency
-                    if next_code == max_size - 1:
-                        lfu_entry = lfu_tracker.find_lfu()
-                        if lfu_entry is not None:
-                            del dictionary[lfu_entry]  # Remove from dictionary
-                            lfu_tracker.remove(lfu_entry)  # Remove from LFU tracker
-
-                    # Add new phrase to dictionary and track it (start with frequency 1)
+                    # Add new phrase to dictionary
                     dictionary[combined] = next_code
-                    lfu_tracker.use(combined)  # Add to tracker with frequency 1
+                    lfu_tracker.use(combined)  # Mark as most recently used
                     next_code += 1
+                else:
+                    # Dictionary FULL - evict LFU entry and reuse its code
+                    lfu_entry = lfu_tracker.find_lfu()
+                    if lfu_entry is not None:
+                        # Get the code of the LFU entry
+                        lfu_code = dictionary[lfu_entry]
+
+                        # Remove old entry from dictionary and LFU tracker
+                        del dictionary[lfu_entry]
+                        lfu_tracker.remove(lfu_entry)
+
+                        # Add new entry at evicted code position
+                        dictionary[combined] = lfu_code
+                        lfu_tracker.use(combined)
+
+                        # Track eviction with both full entry and prefix
+                        evicted_codes[lfu_code] = (combined, current)
+                        # Note: next_code stays at EVICT_SIGNAL (doesn't increment)
 
                 # Start new phrase with current character
                 current = char
 
     # Write final phrase
-    writer.write(dictionary[current], code_bits)
+    final_code = dictionary[current]
+
+    # Check if final code was evicted
+    if final_code in evicted_codes:
+        entry, prefix = evicted_codes[final_code]
+        suffix = entry[len(prefix):]
+
+        # Try O(1) HashMap lookup for prefix position
+        offset = None
+        if prefix in string_to_idx:
+            prefix_global_idx = string_to_idx[prefix]
+            if prefix_global_idx >= history_start_idx:
+                current_end_idx = history_start_idx + len(output_history) - 1
+                offset = current_end_idx - prefix_global_idx + 1
+
+        if offset is not None:
+            if offset > 255:
+                raise ValueError(f"Bug in circular buffer: offset {offset} exceeds 255!")
+            # Send compact EVICT_SIGNAL
+            writer.write(EVICT_SIGNAL, code_bits)
+            writer.write(final_code, code_bits)
+            writer.write(offset, 8)
+            writer.write(ord(suffix), 8)
+        else:
+            # Fallback: send full entry
+            writer.write(EVICT_SIGNAL, code_bits)
+            writer.write(final_code, code_bits)
+            writer.write(0, 8)
+            writer.write(len(entry), 16)
+            for c in entry:
+                writer.write(ord(c), 8)
+
+        del evicted_codes[final_code]
+
+    writer.write(final_code, code_bits)
+
+    # Add final output to history
+    current_global_idx = history_start_idx + len(output_history)
+    output_history.append(current)
+    string_to_idx[current] = current_global_idx
 
     # Update LFU for final phrase if it's tracked
     if lfu_tracker.contains(current):
@@ -463,18 +585,29 @@ def decompress(input_file, output_file):
     # Example: {0: 'a', 1: 'b'} for alphabet ['a', 'b']
     dictionary = {i: char for i, char in enumerate(alphabet)}
 
-    # EOF is alphabet_size
+    # Reserve codes (must match encoder):
+    # - alphabet_size: EOF marker
+    # - alphabet_size+1 to max_size-2: dictionary entries
+    # - max_size-1: EVICT_SIGNAL
     EOF_CODE = alphabet_size
-    next_code = alphabet_size + 1  # Next available dictionary code (alphabet_size reserved for EOF)
+    max_size = 1 << max_bits
+    EVICT_SIGNAL = max_size - 1
+    next_code = alphabet_size + 1  # Next available dictionary code
 
     # Variable-width decoding parameters (must match encoder)
     code_bits = min_bits
-    max_size = 1 << max_bits
     threshold = 1 << code_bits
 
     # LFU tracker for dictionary codes (NOT alphabet codes)
     # Tracks only multi-character sequences added during decompression
     lfu_tracker = LFUTracker()
+
+    # Output history for offset-based reconstruction
+    OUTPUT_HISTORY_SIZE = 255
+    output_history = []
+
+    # Flag to skip dictionary addition after EVICT_SIGNAL
+    skip_next_addition = False
 
     # Read first codeword
     codeword = reader.read(code_bits)
@@ -498,7 +631,10 @@ def decompress(input_file, output_file):
     with open(output_file, 'wb') as out:
         out.write(prev.encode('latin-1'))
 
-        # Main LZW decompression loop
+        # Add first output to history
+        output_history.append(prev)
+
+        # Main decompression loop
         while True:
             # Check if we need to increase bit width
             # This happens AFTER processing previous codeword, BEFORE reading next one
@@ -518,16 +654,63 @@ def decompress(input_file, output_file):
             if codeword == EOF_CODE:
                 break
 
+            # Handle EVICT_SIGNAL (evict-then-use pattern detected by encoder)
+            if codeword == EVICT_SIGNAL:
+                # Encoder is evicting an entry and adding a new one
+                # Format: [EVICT_SIGNAL][code][offset][suffix] or [EVICT_SIGNAL][code][0][full_entry]
+
+                # Read which code is being evicted
+                evicted_code = reader.read(code_bits)
+
+                # Read offset (1 byte)
+                offset = reader.read(8)
+
+                if offset > 0:
+                    # Compact format - reconstruct from offset+suffix
+
+                    # Read suffix (1 byte)
+                    suffix_byte = reader.read(8)
+                    suffix = chr(suffix_byte)
+
+                    # Look back in output history to find prefix
+                    if offset > len(output_history):
+                        raise ValueError(f"Invalid offset {offset}, history size {len(output_history)}")
+
+                    # Get prefix from output history using negative indexing
+                    prefix = output_history[-offset]
+
+                    # Reconstruct full entry from prefix + suffix
+                    new_entry = prefix + suffix
+                else:
+                    # offset=0 signals fallback to full entry format
+                    # Read entry length and full entry
+                    entry_length = reader.read(16)
+                    new_entry = ''.join(chr(reader.read(8)) for _ in range(entry_length))
+
+                # Remove old entry from LFU tracker (if it's a dictionary entry)
+                if evicted_code in dictionary and evicted_code >= alphabet_size + 1:
+                    old_entry = dictionary[evicted_code]
+                    if old_entry is not None:
+                        lfu_tracker.remove(evicted_code)
+
+                # Add new entry at the evicted code position
+                dictionary[evicted_code] = new_entry
+                lfu_tracker.use(evicted_code)
+
+                # Skip dictionary addition on next iteration
+                skip_next_addition = True
+
+                # Don't output anything, don't update prev, continue to next code
+                continue
+
             # Decode codeword
             if codeword in dictionary:
-                # Normal case: code exists in dictionary (or was invalidated to None)
+                # Normal case: code exists in dictionary
                 current = dictionary[codeword]
             elif codeword == next_code:
                 # SPECIAL LZW EDGE CASE:
                 # Encoder output code for entry it's about to add!
                 # This happens when pattern repeats immediately: "aba" -> "ab" + "a"
-                # Encoder sees "ab", outputs code, adds "aba" as next_code
-                # Then sees "aba" and outputs next_code before decoder added it!
                 # Solution: current = prev + first char of prev
                 current = prev + prev[0]
             else:
@@ -537,26 +720,40 @@ def decompress(input_file, output_file):
             # Write decoded string as bytes
             out.write(current.encode('latin-1'))
 
-            # Add new entry to dictionary if not full
-            if next_code < max_size:
-                # LFU EVICTION: If dictionary is about to be full, evict LFU entry first
-                # Uses LRU tie-breaking for entries with same frequency
-                if next_code == max_size - 1:
+            # Add to output history (circular buffer)
+            output_history.append(current)
+            if len(output_history) > OUTPUT_HISTORY_SIZE:
+                output_history.pop(0)
+
+            # Add new entry to dictionary (mirror encoder's logic)
+            # Skip if previous iteration received EVICT_SIGNAL
+            if not skip_next_addition:
+                new_entry = prev + current[0]
+
+                if next_code < EVICT_SIGNAL:
+                    # Dictionary not full yet - add normally
+                    dictionary[next_code] = new_entry
+                    lfu_tracker.use(next_code)
+                    next_code += 1
+                else:
+                    # Dictionary FULL - mirror encoder's LFU eviction
                     lfu_code = lfu_tracker.find_lfu()
                     if lfu_code is not None:
-                        dictionary[lfu_code] = None  # Invalidate entry (don't delete - code still used)
-                        lfu_tracker.remove(lfu_code)  # Remove from LFU tracker
+                        # Remove old entry from dictionary and tracker
+                        del dictionary[lfu_code]
+                        lfu_tracker.remove(lfu_code)
 
-                # New entry is: previous string + first char of current string
-                # This mirrors what encoder did
-                dictionary[next_code] = prev + current[0]
-                lfu_tracker.use(next_code)  # Add to tracker with frequency 1
-                next_code += 1
+                        # Add new entry at evicted code position
+                        dictionary[lfu_code] = new_entry
+                        lfu_tracker.use(lfu_code)
 
-            # Update LFU frequency for codeword if it's a tracked entry (not alphabet)
-            # Only track codes >= alphabet_size + 1 (skip EOF code too)
-            if codeword >= alphabet_size + 1:
-                lfu_tracker.use(codeword)  # Increment frequency
+            # Reset skip flag
+            skip_next_addition = False
+
+            # Update LFU frequency for the codeword we just used (if it's a dictionary entry)
+            if codeword >= alphabet_size + 1 and codeword < EVICT_SIGNAL:
+                if codeword in dictionary:
+                    lfu_tracker.use(codeword)
 
             # Update previous string for next iteration
             prev = current
